@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://paw-rescue-backend.onrender.com/api/:path*"
+      "destination": "https://pawrescue-yioy.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
