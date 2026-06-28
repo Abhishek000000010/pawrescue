@@ -1,0 +1,941 @@
+# PawNet India — Product Requirements Document
+**Version:** 1.0  
+**Hackathon:** HackTheKitty (7-Day Build)  
+**Stack:** MERN (MongoDB, Express, React, Node.js)  
+**Target:** Full working platform for stray cat rescue, adoption, and community in India
+
+---
+
+## 1. Project Overview
+
+### What is PawNet India?
+PawNet India is a centralized stray cat welfare platform for India. It connects citizens who spot stray cats in distress with volunteers, rescuers, fosters, vets, and donors — creating a complete end-to-end rescue ecosystem. Think of it as "Zomato for cat rescue" — hyper-local, real-time, and community-driven.
+
+### Core Philosophy
+- **Report it. Track it. Rescue it.** Every cat reported gets a public rescue thread visible to the community.
+- **Gamified volunteering.** Points, badges, and leaderboards keep volunteers engaged.
+- **Transparent donations.** Every rupee donated is tied to a visible rescue case.
+
+### Tech Stack
+- **Frontend:** React (Vite), TailwindCSS, React Router v6
+- **Backend:** Node.js + Express.js
+- **Database:** MongoDB + Mongoose
+- **Auth:** JWT (access + refresh tokens), bcrypt
+- **Maps:** Leaflet.js + OpenStreetMap (free, no billing needed)
+- **File Storage:** Cloudinary (free tier for images)
+- **Real-time:** Socket.io (rescue tracking, notifications)
+- **Payments:** Razorpay (UPI + cards, test mode for demo)
+- **AI Tagging:** Google Gemini API free tier (cat severity classification from image)
+
+---
+
+## 2. Design System
+
+### Color Palette
+```
+--primary:       #F97316   /* Warm orange — urgency, action */
+--primary-dark:  #C2410C   /* Hover states */
+--accent:        #FCD34D   /* Cat-gold yellow — gamification, highlights */
+--surface:       #0F172A   /* Deep navy — main background */
+--surface-card:  #1E293B   /* Card backgrounds */
+--surface-light: #334155   /* Borders, dividers */
+--text-primary:  #F8FAFC   /* Main text */
+--text-muted:    #94A3B8   /* Subtext, labels */
+--success:       #22C55E   /* Rescued, adopted statuses */
+--danger:        #EF4444   /* Critical severity, emergencies */
+--warning:       #F59E0B   /* Moderate severity */
+```
+
+### Typography
+```
+Display font:  'Plus Jakarta Sans' (headings, hero text) — Google Fonts
+Body font:     'Inter' (body copy, UI text) — Google Fonts
+Mono font:     'JetBrains Mono' (IDs, codes, stats) — Google Fonts
+```
+
+### Spacing Scale (Tailwind defaults — use these consistently)
+`p-2, p-4, p-6, p-8, p-12, p-16` — never use arbitrary values.
+
+### Component Conventions
+- **Cards:** `rounded-2xl bg-surface-card border border-surface-light shadow-lg`
+- **Buttons Primary:** `bg-primary hover:bg-primary-dark text-white rounded-xl px-6 py-3 font-semibold transition`
+- **Buttons Ghost:** `border border-surface-light text-text-primary hover:bg-surface-light rounded-xl px-6 py-3`
+- **Badges:** `rounded-full text-xs font-bold px-3 py-1`
+- **Severity Critical:** `bg-danger/20 text-danger border border-danger/30`
+- **Severity Moderate:** `bg-warning/20 text-warning border border-warning/30`
+- **Severity Stable:** `bg-success/20 text-success border border-success/30`
+
+### Signature Design Element
+**Paw trail navigation indicator** — an animated paw print trail that follows page transitions, used as the active page indicator in the sidebar and as a loading state animation. This is the single memorable visual identity element of PawNet.
+
+---
+
+## 3. Project Structure
+
+```
+pawnet-india/
+├── client/                          # React frontend
+│   ├── public/
+│   ├── src/
+│   │   ├── api/                     # Axios instance + API calls
+│   │   ├── assets/                  # Icons, images, paw SVGs
+│   │   ├── components/
+│   │   │   ├── common/              # Navbar, Sidebar, Footer, Modal, Badge
+│   │   │   ├── cat/                 # CatCard, CatStatusBadge, SeverityTag
+│   │   │   ├── map/                 # MapView, MapPin, MapFilters
+│   │   │   ├── mission/             # MissionCard, MissionTimer
+│   │   │   ├── community/           # PostCard, CommentBox, StoryCard
+│   │   │   └── dashboard/           # StatCard, BadgeDisplay, ActivityFeed
+│   │   ├── context/                 # AuthContext, NotificationContext
+│   │   ├── hooks/                   # useAuth, useSocket, useGeolocation
+│   │   ├── pages/
+│   │   │   ├── Home.jsx
+│   │   │   ├── Report.jsx
+│   │   │   ├── Adopt.jsx
+│   │   │   ├── Volunteer.jsx
+│   │   │   ├── CatMap.jsx
+│   │   │   ├── Missions.jsx
+│   │   │   ├── FosterNetwork.jsx
+│   │   │   ├── VetDirectory.jsx
+│   │   │   ├── RescueTracking.jsx
+│   │   │   ├── Community.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── Marketplace.jsx
+│   │   │   ├── Donate.jsx
+│   │   │   ├── SuccessStories.jsx
+│   │   │   ├── Notifications.jsx
+│   │   │   └── Profile.jsx
+│   │   ├── router/                  # React Router config
+│   │   ├── utils/                   # formatDate, formatINR, severityColor
+│   │   └── main.jsx
+│
+├── server/                          # Node/Express backend
+│   ├── config/
+│   │   ├── db.js                    # MongoDB connection
+│   │   └── cloudinary.js            # Cloudinary config
+│   ├── controllers/
+│   │   ├── authController.js
+│   │   ├── catController.js
+│   │   ├── missionController.js
+│   │   ├── adoptionController.js
+│   │   ├── volunteerController.js
+│   │   ├── donationController.js
+│   │   ├── communityController.js
+│   │   ├── vetController.js
+│   │   ├── fosterController.js
+│   │   ├── marketplaceController.js
+│   │   └── notificationController.js
+│   ├── middleware/
+│   │   ├── auth.js                  # JWT verify middleware
+│   │   ├── upload.js                # Multer + Cloudinary
+│   │   └── errorHandler.js
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Cat.js
+│   │   ├── Mission.js
+│   │   ├── Adoption.js
+│   │   ├── Donation.js
+│   │   ├── Post.js
+│   │   ├── Vet.js
+│   │   ├── FosterHome.js
+│   │   ├── Product.js
+│   │   └── Notification.js
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── cats.js
+│   │   ├── missions.js
+│   │   ├── adoptions.js
+│   │   ├── volunteers.js
+│   │   ├── donations.js
+│   │   ├── community.js
+│   │   ├── vets.js
+│   │   ├── fosters.js
+│   │   ├── marketplace.js
+│   │   └── notifications.js
+│   ├── services/
+│   │   ├── aiService.js             # Gemini API severity tagging
+│   │   ├── socketService.js         # Socket.io real-time events
+│   │   └── razorpayService.js       # Payment order creation
+│   └── server.js
+│
+├── .env
+├── .env.example
+└── README.md
+```
+
+---
+
+## 4. MongoDB Data Models
+
+### User
+```javascript
+{
+  _id, name, email, password (hashed), phone, avatar (cloudinary url),
+  role: ['citizen', 'volunteer', 'foster', 'vet', 'admin'],
+  location: { city, state, coordinates: { lat, lng } },
+  volunteerRoles: ['rescue', 'feeding', 'transport', 'fostering', 'medical'],
+  points: Number,
+  badges: [{ name, icon, earnedAt }],
+  reportsCount, missionsCompleted, catsRescued, catsAdopted,
+  isVerified: Boolean,
+  createdAt, updatedAt
+}
+```
+
+### Cat
+```javascript
+{
+  _id,
+  name: String (optional, assigned later),
+  photos: [cloudinary_url],
+  location: {
+    address: String,
+    area: String,
+    city: String,
+    coordinates: { lat: Number, lng: Number }
+  },
+  severity: { type: String, enum: ['critical', 'moderate', 'stable'] },
+  aiSeverityReason: String,
+  condition: String,
+  status: {
+    type: String,
+    enum: ['reported', 'rescue_assigned', 'rescued', 'in_care', 'ready_for_adoption', 'adopted', 'deceased']
+  },
+  reportedBy: { type: ObjectId, ref: 'User' },
+  assignedVolunteer: { type: ObjectId, ref: 'User' },
+  rescueTimeline: [{
+    status: String, note: String, updatedBy: ObjectId, timestamp: Date
+  }],
+  tags: [String],
+  isAvailableForAdoption: Boolean,
+  fosterHome: { type: ObjectId, ref: 'FosterHome' },
+  vetVisits: [{ vet: ObjectId, date: Date, notes: String, cost: Number }],
+  donationsReceived: Number,
+  colonyId: String,
+  createdAt, updatedAt
+}
+```
+
+### Mission
+```javascript
+{
+  _id,
+  type: { type: String, enum: ['feeding', 'transport', 'vet_visit', 'temp_shelter', 'rescue', 'colony_check'] },
+  title: String,
+  description: String,
+  cat: { type: ObjectId, ref: 'Cat' },
+  location: { address, coordinates: { lat, lng } },
+  status: { type: String, enum: ['open', 'claimed', 'in_progress', 'completed', 'cancelled'] },
+  claimedBy: { type: ObjectId, ref: 'User' },
+  createdBy: { type: ObjectId, ref: 'User' },
+  pointsReward: Number,
+  urgency: { type: String, enum: ['urgent', 'normal', 'low'] },
+  dueBy: Date,
+  completionProof: [String],
+  completedAt: Date,
+  createdAt
+}
+```
+
+### Adoption
+```javascript
+{
+  _id,
+  cat: { type: ObjectId, ref: 'Cat' },
+  applicant: { type: ObjectId, ref: 'User' },
+  status: { type: String, enum: ['pending', 'approved', 'rejected', 'completed'] },
+  applicationAnswers: {
+    housingType: String,
+    hasOtherPets: Boolean,
+    hasChildren: Boolean,
+    experience: String,
+    reason: String,
+    monthlyBudget: Number
+  },
+  reviewedBy: { type: ObjectId, ref: 'User' },
+  reviewNote: String,
+  createdAt
+}
+```
+
+### Donation
+```javascript
+{
+  _id,
+  donor: { type: ObjectId, ref: 'User' },
+  amount: Number,
+  purpose: { type: String, enum: ['rescue_mission', 'medical', 'feeding', 'shelter', 'general'] },
+  cat: { type: ObjectId, ref: 'Cat' },
+  razorpayOrderId: String,
+  razorpayPaymentId: String,
+  status: { type: String, enum: ['pending', 'success', 'failed'] },
+  message: String,
+  isAnonymous: Boolean,
+  createdAt
+}
+```
+
+### Post (Community)
+```javascript
+{
+  _id,
+  author: { type: ObjectId, ref: 'User' },
+  type: { type: String, enum: ['update', 'story', 'request', 'tip'] },
+  content: String,
+  images: [String],
+  cat: { type: ObjectId, ref: 'Cat' },
+  likes: [{ type: ObjectId, ref: 'User' }],
+  comments: [{
+    author: ObjectId, content: String, createdAt: Date
+  }],
+  tags: [String],
+  createdAt
+}
+```
+
+### Vet
+```javascript
+{
+  _id,
+  name: String,
+  clinicName: String,
+  phone: String,
+  email: String,
+  address: String,
+  city: String,
+  coordinates: { lat, lng },
+  specializations: [String],
+  treatsStraysCost: { type: String, enum: ['free', 'subsidized', 'full'] },
+  rating: Number,
+  reviewCount: Number,
+  isVerified: Boolean,
+  workingHours: String,
+  addedBy: { type: ObjectId, ref: 'User' }
+}
+```
+
+### FosterHome
+```javascript
+{
+  _id,
+  user: { type: ObjectId, ref: 'User' },
+  capacity: Number,
+  currentCats: [{ type: ObjectId, ref: 'Cat' }],
+  location: { city, state, coordinates },
+  preferences: { ageRange: String, healthCondition: String },
+  isAvailable: Boolean,
+  joinedAt: Date
+}
+```
+
+### Product (Marketplace)
+```javascript
+{
+  _id,
+  name, description, price, images: [String],
+  category: { type: String, enum: ['food', 'toys', 'accessories', 'medicine', 'beds'] },
+  seller: String,
+  donationPercent: Number,
+  stock: Number,
+  rating: Number,
+  isActive: Boolean
+}
+```
+
+### Notification
+```javascript
+{
+  _id,
+  user: { type: ObjectId, ref: 'User' },
+  type: String,
+  title: String,
+  message: String,
+  link: String,
+  isRead: Boolean,
+  createdAt: Date
+}
+```
+
+---
+
+## 5. API Routes
+
+### Auth — `/api/auth`
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/register` | Register new user |
+| POST | `/login` | Login, returns JWT |
+| POST | `/logout` | Invalidate token |
+| GET | `/me` | Get current user |
+| PUT | `/me` | Update profile |
+| POST | `/refresh` | Refresh access token |
+
+### Cats — `/api/cats`
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/` | Report a cat (with photo upload) |
+| GET | `/` | Get all cats (with filters: city, severity, status) |
+| GET | `/:id` | Get cat detail + rescue timeline |
+| PUT | `/:id` | Update cat info (volunteer/admin) |
+| PUT | `/:id/status` | Update rescue status |
+| GET | `/map/pins` | Get all cat coordinates for map |
+| POST | `/:id/donate` | Donate to specific cat rescue |
+
+### Missions — `/api/missions`
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/` | List open missions (filter by type, city) |
+| POST | `/` | Create mission (admin/volunteer) |
+| PUT | `/:id/claim` | Claim a mission |
+| PUT | `/:id/complete` | Mark complete + upload proof |
+| GET | `/my` | My missions |
+
+### Adoptions — `/api/adoptions`
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/` | Submit adoption application |
+| GET | `/` | List adoptable cats |
+| GET | `/my` | My applications |
+| PUT | `/:id/review` | Approve/reject (admin) |
+
+### Volunteers — `/api/volunteers`
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/register` | Register as volunteer |
+| GET | `/` | List volunteers (admin) |
+| GET | `/:id` | Volunteer profile |
+
+### Donations — `/api/donations`
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/create-order` | Create Razorpay order |
+| POST | `/verify` | Verify payment signature |
+| GET | `/my` | My donation history |
+
+### Community — `/api/community`
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/posts` | Get community feed |
+| POST | `/posts` | Create post |
+| PUT | `/posts/:id/like` | Like/unlike post |
+| POST | `/posts/:id/comment` | Add comment |
+| GET | `/stories` | Get success stories |
+
+### Vets — `/api/vets`
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/` | List vets (filter by city, cost) |
+| POST | `/` | Add vet (user contributed) |
+| GET | `/:id` | Vet detail |
+
+### Fosters — `/api/fosters`
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/register` | Register foster home |
+| GET | `/available` | List available fosters |
+| PUT | `/:id/assign` | Assign cat to foster (admin) |
+
+### Marketplace — `/api/marketplace`
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/products` | List products |
+| GET | `/products/:id` | Product detail |
+| POST | `/orders` | Place order |
+
+### Notifications — `/api/notifications`
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/` | Get my notifications |
+| PUT | `/:id/read` | Mark as read |
+| PUT | `/read-all` | Mark all as read |
+
+---
+
+## 6. Feature Specifications
+
+---
+
+### 6.1 🏠 Home Page
+
+**Purpose:** Introduce PawNet India, show live impact stats, and push users to take action.
+
+**Sections:**
+1. **Hero** — Bold headline: "Every stray deserves a rescue." with animated paw trail. Two CTAs: "Report a Cat" (primary) and "Become a Volunteer" (ghost).
+2. **Live Impact Counter** — Real-time animated counters: Cats Reported / Cats Rescued / Active Volunteers / Cities Covered. Pull from `/api/stats` endpoint.
+3. **Recent Reports Feed** — Horizontal scroll of the last 6 cat cards with severity tags and location.
+4. **How It Works** — 4-step visual process: Report → Volunteer Claims → Rescue → Adopt.
+5. **Featured Success Story** — One highlighted story with before/after cat photo.
+6. **Call To Action Banner** — "A cat near you needs help right now." with map preview showing pins.
+
+**API:** `GET /api/stats`, `GET /api/cats?limit=6&sort=recent`
+
+---
+
+### 6.2 🚨 Report a Cat
+
+**Purpose:** Enable quick reporting of a stray cat in distress.
+
+**Form Fields:**
+- Photo upload (up to 5 images, Cloudinary)
+- Location: Auto-detect (GPS) OR manual address input
+- Condition description (textarea)
+- Urgency toggle: "Cat is injured/in immediate danger" checkbox
+- Contact number (optional)
+
+**AI Severity Tagging:**
+- On photo upload, send image to **Google Gemini Vision API**
+- Prompt: `"Analyze this photo of a stray cat. Rate its condition as: critical (severely injured, bleeding, unable to move), moderate (visibly injured, limping, malnourished), or stable (healthy but stray). Return JSON: { severity, reason }"`
+- Display AI tag immediately below photo with a badge
+- User can override AI tag
+
+**On Submit:**
+- Create Cat document in DB
+- Auto-create a Mission of type 'rescue' linked to this cat
+- Emit socket event `new_report` to all connected clients in same city
+- Send notification to volunteers in that city
+
+**UX Notes:**
+- Mobile-first form — large touch targets
+- Loading state: "AI is assessing the cat's condition..."
+- Success screen: Show cat ID, severity badge, estimated response time, share button
+
+---
+
+### 6.3 🐱 Adopt a Cat
+
+**Purpose:** Browse verified cats available for adoption and submit applications.
+
+**Layout:**
+- Filter bar: City / Severity / Age / Gender / Status (ready_for_adoption only)
+- Masonry grid of CatCards
+- Each card shows: photo, name (if given), age estimate, location, severity history badge, "Meet [Name]" CTA
+
+**Cat Detail Page (`/adopt/:catId`):**
+- Photo gallery (swipeable)
+- Full rescue story timeline
+- Health status (vaccinated, neutered, vet notes)
+- "Apply to Adopt" button → opens application modal
+
+**Adoption Application Modal:**
+- Housing type (apartment/house/villa)
+- Other pets (yes/no)
+- Children at home (yes/no)
+- Experience with cats (text)
+- Why do you want to adopt (text)
+- Monthly budget for cat care (number)
+- Submit → status "pending review"
+
+**API:** `GET /api/cats?status=ready_for_adoption`, `POST /api/adoptions`
+
+---
+
+### 6.4 🤝 Become a Volunteer
+
+**Purpose:** Register as a volunteer and choose your role.
+
+**Steps:**
+1. **Role Selection** (multi-select cards with icons):
+   - 🏃 Rescue Runner — physically rescue and transport cats
+   - 🍽️ Feeding Volunteer — maintain feeding points
+   - 🚗 Transport Helper — drive cats to vets
+   - 🏠 Foster Provider — temporarily house cats
+   - 💊 Medical Support — assist with vet visits
+2. **Availability Form:** City, days available, has vehicle (yes/no), has experience (yes/no)
+3. **Agreement:** PawNet volunteer code of conduct checkbox
+
+**On Register:**
+- Update User role to 'volunteer'
+- Set volunteerRoles array
+- Award "New Volunteer" badge (+50 points)
+- Redirect to Dashboard
+
+**API:** `POST /api/volunteers/register`
+
+---
+
+### 6.5 🗺️ Cat Map
+
+**Purpose:** Interactive map showing all cat-related locations.
+
+**Tech:** Leaflet.js + OpenStreetMap tiles (free)
+
+**Map Layers (toggleable):**
+- 🔴 Reported Cats (critical)
+- 🟡 Reported Cats (moderate)
+- 🟢 Reported Cats (stable)
+- 🏠 Cat Colonies
+- 🏥 Shelters
+- 🍽️ Feeding Points
+- 🩺 Vet Clinics
+
+**Features:**
+- Cluster pins when zoomed out (Leaflet.markercluster)
+- Click pin → popup with cat photo, severity badge, quick action buttons
+- "Report here" floating button — uses current map center as location
+- Filter panel (slide-in on mobile)
+- Search bar: jump to city
+
+**API:** `GET /api/cats/map/pins`, `GET /api/vets` (for vet layer)
+
+---
+
+### 6.6 🎯 Rescue Missions
+
+**Purpose:** Volunteers claim and complete community tasks.
+
+**Mission Types:** Feeding / Transport / Vet Visit / Temp Shelter / Rescue / Colony Check
+
+**Layout:**
+- Tab bar: All Missions / Urgent / Claimed by Me / Completed
+- MissionCard: Title, type icon, location, points reward, urgency badge, time remaining, "Claim" button
+- Claimed missions show: cat link, instructions, "Mark Complete" + photo proof upload
+
+**Mission Flow:**
+1. Mission created (auto or by admin/volunteer)
+2. Open → any volunteer can claim
+3. Claimed → only claimant can act on it (24hr auto-release if no update)
+4. In Progress → volunteer uploads update
+5. Completed → admin/system verifies, points awarded
+
+**Points Rewards:**
+- Feeding: 20 pts
+- Transport: 40 pts
+- Vet Visit: 60 pts
+- Rescue: 100 pts
+- Colony Check: 15 pts
+
+**API:** `GET /api/missions`, `PUT /api/missions/:id/claim`, `PUT /api/missions/:id/complete`
+
+---
+
+### 6.7 🏠 Foster Network
+
+**Purpose:** Match rescued cats with temporary foster homes.
+
+**For Fosters:**
+- Registration form: Capacity, location, preferences (kitten/adult, healthy/medical needs)
+- Dashboard showing currently fostered cats and their status
+
+**For Admins:**
+- List of available foster homes with capacity
+- Assign cat to foster home button
+
+**Cat Foster Status:**
+- When cat status = 'rescued', admin can assign to a foster home
+- Foster receives notification + care instructions
+- Foster logs daily updates (optional)
+
+**API:** `POST /api/fosters/register`, `GET /api/fosters/available`, `PUT /api/fosters/:id/assign`
+
+---
+
+### 6.8 🏥 Vet Directory
+
+**Purpose:** Find nearby vets who treat stray/rescued cats.
+
+**Layout:**
+- Filter: City / Cost (free/subsidized/full) / Specialization
+- VetCard: Clinic name, doctor name, address, phone, cost type badge, rating
+- Map view toggle (shows vet pins on Leaflet map)
+
+**Data Strategy:**
+- Pre-seed DB with 20–30 real Mumbai/Navi Mumbai vets (research and add manually or from existing directories)
+- Allow community to add vets (pending admin approval)
+- Users can rate vets (1–5 stars)
+
+**API:** `GET /api/vets?city=&cost=`, `POST /api/vets`
+
+---
+
+### 6.9 ❤️ Rescue Tracking
+
+**Purpose:** Public timeline of every cat's rescue journey.
+
+**Cat Rescue Page (`/rescue/:catId`):**
+- Cat header: photo, name, current status badge
+- **Timeline component** (vertical, chronological):
+  - Reported (date, reporter, photo)
+  - Volunteer Assigned (who, when)
+  - Rescued (photo proof)
+  - Vet Visit (vet name, diagnosis)
+  - Foster Home Assigned
+  - Available for Adoption
+  - Adopted ✓
+- Each timeline entry can have a note and photo
+- Public shareable link
+- Donation widget on the side: "Support [Cat Name]'s Recovery"
+
+**Real-time Updates:** Socket.io event `rescue_update` pushes new timeline entries to connected viewers instantly.
+
+**API:** `GET /api/cats/:id` (includes rescueTimeline), `PUT /api/cats/:id/status`
+
+---
+
+### 6.10 👥 Community
+
+**Purpose:** Social space for volunteers and supporters.
+
+**Feed:**
+- Post types: Update / Story / Request / Tip
+- Each post: author avatar, content, images (up to 4), cat link (optional), likes, comments
+- Like button, comment expand toggle
+- Infinite scroll (pagination: `?page=1&limit=10`)
+
+**Sub-sections:**
+- `/community` — main feed
+- `/community/stories` — success stories only (filtered type=story)
+- `/community/tips` — cat care tips
+
+**Create Post Modal:**
+- Type selector, content textarea, image upload, tag a cat (optional)
+
+**API:** `GET /api/community/posts`, `POST /api/community/posts`, `PUT /api/community/posts/:id/like`
+
+---
+
+### 6.11 📊 Dashboard
+
+**Purpose:** Personal hub showing all user activity.
+
+**Sections:**
+- **Stats Row:** Reports Made / Missions Completed / Cats Rescued / Points Earned
+- **Badges Gallery:** Grid of earned badges (locked ones shown as greyed out)
+- **Active Missions:** Cards of currently claimed missions
+- **My Reports:** Table of cats you've reported with current status
+- **Leaderboard:** Top 10 volunteers this month by points
+- **Recent Activity Feed:** Chronological log of your actions
+
+**Badges List:**
+- First Report, First Rescue, 5 Missions, 10 Missions, 50 Missions
+- Top Volunteer (monthly), Night Rescuer, Foster Hero, Donor, Community Star
+
+**API:** `GET /api/users/:id/stats`, `GET /api/missions/my`, `GET /api/cats?reportedBy=me`
+
+---
+
+### 6.12 🛍️ Marketplace
+
+**Purpose:** Buy cat products; a % of each sale goes to PawNet rescue fund.
+
+**Layout:**
+- Category tabs: Food / Toys / Accessories / Medicine / Beds
+- ProductCard: Image, name, price, donation badge ("15% to rescues"), rating, Add to Cart
+- Cart drawer (slide-in from right)
+- Checkout → Razorpay payment
+
+**Note for hackathon:** Pre-seed with 15–20 mock products. Cart and checkout with Razorpay test mode is sufficient.
+
+**API:** `GET /api/marketplace/products`, `POST /api/marketplace/orders`
+
+---
+
+### 6.13 💝 Donate
+
+**Purpose:** Contribute funds transparently to rescue causes.
+
+**Donation Types (tab selector):**
+- Specific Cat Rescue (link to a cat page)
+- Medical Treatment Fund
+- Feeding Program
+- General Rescue Fund
+- Support a Shelter
+
+**Donation Flow:**
+1. Select purpose + amount (preset: ₹50 / ₹100 / ₹250 / ₹500 / custom)
+2. Optional: Leave a message, donate anonymously
+3. Razorpay checkout (UPI / card / netbanking)
+4. On success: Thank you screen + show impact ("Your ₹250 can cover 2 weeks of food")
+
+**Transparency Section:**
+- Live donation ticker
+- Fund allocation pie chart (Medical 40%, Feeding 30%, Rescue Ops 20%, Platform 10%)
+- Recent donors list (with anonymous option)
+
+**API:** `POST /api/donations/create-order`, `POST /api/donations/verify`
+
+---
+
+### 6.14 📰 Success Stories
+
+**Purpose:** Inspiring rescue-to-adoption stories.
+
+**Layout:**
+- Hero story (featured, full-width banner with before/after)
+- Story grid: StoryCard with cat photo, title, rescue date, volunteer credited
+- Individual story page: full narrative, photo gallery, timeline highlights, share buttons
+
+**Data:** These are community posts with type='story' that have been approved/featured by admin. Pull from `GET /api/community/stories`.
+
+---
+
+### 6.15 🔔 Notifications
+
+**Purpose:** Real-time alerts for rescue requests, missions, updates.
+
+**Notification Types:**
+- `new_report_nearby` — Cat reported near you
+- `mission_claimed` — Someone claimed your mission
+- `mission_available` — New mission in your city
+- `rescue_update` — A cat you reported has a status update
+- `adoption_approved` — Your adoption application approved
+- `badge_earned` — You earned a new badge
+- `donation_received` — Donation received for your cat
+
+**UI:**
+- Bell icon in navbar with unread count badge
+- Dropdown panel (last 10 notifications)
+- Full notifications page with infinite scroll
+- Mark as read on click
+
+**Real-time:** Socket.io pushes notifications to connected user's room instantly.
+
+**API:** `GET /api/notifications`, `PUT /api/notifications/read-all`
+
+---
+
+### 6.16 👤 Profile
+
+**Purpose:** Manage account, view history, show achievements.
+
+**Sections:**
+- **Profile Header:** Avatar (upload via Cloudinary), name, city, volunteer roles, points total
+- **Edit Profile Form:** Name, phone, city, bio, volunteer roles
+- **My Reports Tab:** All cats reported, each with status
+- **My Adoptions Tab:** Applications submitted with status
+- **My Missions Tab:** Completed missions history
+- **Achievements Tab:** All earned badges with date
+- **Settings:** Change password, notification preferences
+
+**API:** `GET /api/auth/me`, `PUT /api/auth/me`
+
+---
+
+## 7. AI Integration Details
+
+### Google Gemini Vision — Severity Tagging
+
+**Endpoint:** `POST /api/cats/analyze-severity`
+
+**Implementation (server/services/aiService.js):**
+```javascript
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+async function analyzeCatSeverity(imageBase64, mimeType) {
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  
+  const prompt = `You are a cat welfare AI. Analyze this image of a stray cat.
+  Classify the cat's condition as one of:
+  - critical: severely injured, bleeding, unable to move, collapsed
+  - moderate: visibly injured, limping, malnourished, sick
+  - stable: appears healthy but is a stray
+  
+  Respond ONLY with valid JSON, no markdown:
+  { "severity": "critical|moderate|stable", "reason": "brief explanation in 1 sentence" }`;
+
+  const result = await model.generateContent([
+    { inlineData: { data: imageBase64, mimeType } },
+    prompt
+  ]);
+
+  const text = result.response.text();
+  return JSON.parse(text);
+}
+```
+
+**Trigger:** Called immediately on photo upload in the Report form (client sends base64, server calls Gemini, returns `{ severity, reason }` within 2-3 seconds).
+
+---
+
+## 8. Real-time Events (Socket.io)
+
+### Server Setup (server/services/socketService.js)
+```javascript
+// Rooms: each city has its own room e.g. "city:mumbai"
+// User joins their city room on connect
+
+const events = {
+  // Emitted by server
+  'new_report': { catId, severity, location, thumbnail },
+  'rescue_update': { catId, status, note, timestamp },
+  'mission_available': { missionId, type, location, points },
+  'notification': { userId, type, title, message },
+  
+  // Emitted by client
+  'join_city': (cityName) => socket.join(`city:${cityName}`),
+  'join_user': (userId) => socket.join(`user:${userId}`)
+}
+```
+
+---
+
+## 9. Environment Variables
+
+```env
+# Server
+PORT=5000
+MONGODB_URI=mongodb+srv://...
+JWT_SECRET=your_jwt_secret
+JWT_REFRESH_SECRET=your_refresh_secret
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+# Google Gemini
+GEMINI_API_KEY=
+
+# Razorpay
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+
+# Client
+VITE_API_URL=http://localhost:5000/api
+VITE_SOCKET_URL=http://localhost:5000
+VITE_RAZORPAY_KEY_ID=
+```
+
+---
+
+## 10. Seed Data Requirements
+
+Run `node server/seed.js` to populate:
+
+- **5 Users:** 1 admin, 2 volunteers, 1 foster, 1 citizen
+- **15 Cats:** Mix of severities and statuses across Mumbai, Pune, Bangalore
+- **10 Missions:** Open + claimed, various types
+- **3 Adoptions:** Pending/approved
+- **25 Vets:** Mumbai/Navi Mumbai/Pune (name, address, phone, cost type)
+- **20 Products:** 4 per category for marketplace
+- **10 Posts:** Mix of updates and stories
+- **5 Donations:** Various amounts and purposes
+
+---
+
+## 11. Deployment Notes (for demo)
+
+- **Frontend:** Vercel (connect GitHub repo, set VITE_ env vars)
+- **Backend:** Render.com free tier (set env vars, set start command: `node server/server.js`)
+- **Database:** MongoDB Atlas free tier (M0 cluster)
+- **File Storage:** Cloudinary free tier (25GB)
+- **Maps:** OpenStreetMap — no API key needed
+- **Payments:** Razorpay test mode — no real money
+
+---
+
+## 12. Build Order (Recommended for 7 Days)
+
+| Day | Focus |
+|-----|-------|
+| Day 1 | Project setup, auth (register/login/JWT), User model, basic layout + navbar |
+| Day 2 | Cat model, Report a Cat page (with AI tagging), Cat Map (Leaflet) |
+| Day 3 | Rescue Tracking (timeline), Missions (claim/complete), Socket.io setup |
+| Day 4 | Adopt a Cat, Volunteer registration, Foster Network, Dashboard |
+| Day 5 | Community feed, Success Stories, Vet Directory, Notifications |
+| Day 6 | Donate (Razorpay), Marketplace, Profile page, Success Stories |
+| Day 7 | Seed data, bug fixes, mobile responsiveness, demo prep |
+
+---
+
+*PawNet India PRD v1.0 — Built for HackTheKitty*

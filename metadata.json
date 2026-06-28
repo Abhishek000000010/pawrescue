@@ -1,0 +1,6 @@
+{
+  "name": "Paw Rescue",
+  "description": "A beautiful, highly-polished landing page for Paw Rescue, a community-driven stray cat rescue platform designed to locate, care for, and adopt stray felines.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
