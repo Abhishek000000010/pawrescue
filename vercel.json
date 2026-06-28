@@ -6,6 +6,10 @@
       "destination": "https://pawrescue-yioy.onrender.com/api/:path*"
     },
     {
+      "source": "/overpass/:path*",
+      "destination": "https://overpass-api.de/api/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

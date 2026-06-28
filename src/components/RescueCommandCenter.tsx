@@ -112,8 +112,8 @@ const fetchRealVetsAndShelters = async (centerLat: number, centerLng: number): P
   `;
   
   try {
-    // Using GET request prevents CORS preflight issues in browsers
-    const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+    // Using Vercel rewrite proxy to bypass CORS
+    const res = await fetch(`/overpass/interpreter?data=${encodeURIComponent(query)}`);
     
     if (!res.ok) return [];
     const data = await res.json();
