@@ -38,9 +38,23 @@ const userSchema = new mongoose.Schema(
     volunteerRoles: [
       {
         type: String,
-        enum: ['rescue', 'feeding', 'transport', 'fostering', 'medical'],
       },
     ],
+    availability: {
+      type: String,
+    },
+    // Opt-in: show this foster's approximate location on the public rescue map.
+    showOnMap: {
+      type: Boolean,
+      default: false,
+    },
+    codeOfConductAccepted: {
+      type: Boolean,
+      default: false,
+    },
+    volunteerAppliedAt: {
+      type: Date,
+    },
     points: {
       type: Number,
       default: 0,
@@ -56,6 +70,14 @@ const userSchema = new mongoose.Schema(
     missionsCompleted: { type: Number, default: 0 },
     catsRescued: { type: Number, default: 0 },
     catsAdopted: { type: Number, default: 0 },
+    donations: [
+      {
+        amount: Number,
+        transactionId: String,
+        address: String,
+        date: { type: Date, default: Date.now },
+      },
+    ],
     isVerified: {
       type: Boolean,
       default: false,
@@ -67,10 +89,9 @@ const userSchema = new mongoose.Schema(
 );
 
 // Hash password before saving
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    next();
-  }
+userSchema.pre('save', async function () {
+  // Mongoose 9 async hooks resolve via the returned promise — no `next`.
+  if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });

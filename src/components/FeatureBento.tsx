@@ -6,6 +6,7 @@ interface FeatureBentoProps {
   onMapClick: () => void;
   onAdoptClick: () => void;
   onVolunteerClick: () => void;
+  onMissionsClick: () => void;
 }
 
 const MOCK_TRACKING: Record<string, { name: string; status: string; step: number; update: string; location: string }> = {
@@ -14,7 +15,7 @@ const MOCK_TRACKING: Record<string, { name: string; status: string; step: number
   'CAT-889': { name: 'Unnamed Calico', status: 'Scouted & Checking', step: 2, update: 'Scout Emma W. is checking the colony grounds.', location: 'Downtown Alleyway' },
 };
 
-export default function FeatureBento({ onMapClick, onAdoptClick, onVolunteerClick }: FeatureBentoProps) {
+export default function FeatureBento({ onMapClick, onAdoptClick, onVolunteerClick, onMissionsClick }: FeatureBentoProps) {
   const [trackId, setTrackId] = useState('');
   const [trackResult, setTrackResult] = useState<typeof MOCK_TRACKING[string] | null>(null);
   const [trackError, setTrackError] = useState(false);
@@ -32,20 +33,28 @@ export default function FeatureBento({ onMapClick, onAdoptClick, onVolunteerClic
   };
 
   return (
-    <section className="py-20 bg-white dark:bg-brand-dark">
-      <div className="max-w-7xl mx-auto px-6 space-y-12">
+    <section className="py-24 relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6 space-y-12 relative z-10">
         
+        {/* Section Header */}
+        <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
+          <span className="inline-block py-1 px-3 rounded-full bg-brand-primary/10 text-brand-primary text-xs font-bold tracking-widest uppercase mb-2">Core Features</span>
+          <h2 className="font-heading text-4xl sm:text-5xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
+            Everything you need to <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-accent">save lives.</span>
+          </h2>
+        </div>
+
         {/* Bento Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Card 1: Real-time Rescue Map (66% Width on Large Screens) */}
+          {/* Card 1: Real-time Rescue Map */}
           <div
             onClick={onMapClick}
-            className="md:col-span-2 group relative overflow-hidden rounded-3xl bg-brand-light dark:bg-brand-muted/10 border border-brand-cream dark:border-brand-muted/20 p-8 flex flex-col justify-between h-[360px] cursor-pointer hover:shadow-xl hover:border-brand-primary/20 dark:hover:border-brand-primary/30 transition-all duration-300"
+            className="md:col-span-2 group relative overflow-hidden rounded-[2rem] glass p-10 flex flex-col justify-between min-h-[400px] cursor-pointer hover:shadow-2xl hover:shadow-brand-primary/20 hover:-translate-y-1 transition-all duration-500"
           >
             {/* Map Graphic Preview Background */}
-            <div className="absolute top-1/2 -translate-y-1/2 right-12 w-80 h-80 rounded-full border border-brand-primary/10 bg-brand-cream/40 dark:bg-brand-muted/5 flex items-center justify-center pointer-events-none group-hover:scale-105 transition-transform duration-500">
-              <div className="w-56 h-56 rounded-full border border-brand-primary/15 bg-white dark:bg-brand-dark flex items-center justify-center animate-pulse">
+            <div className="absolute top-1/2 -translate-y-1/2 right-10 w-96 h-96 rounded-full border border-zinc-200 dark:border-white/5 bg-gradient-to-br from-brand-primary/10 to-transparent flex items-center justify-center pointer-events-none group-hover:scale-105 group-hover:rotate-3 transition-transform duration-700">
+              <div className="w-64 h-64 rounded-full border border-zinc-200 dark:border-white/5 bg-white/50 dark:bg-black/20 backdrop-blur-sm flex items-center justify-center animate-pulse" style={{ animationDuration: '4s' }}>
                 <div className="w-24 h-24 rounded-full border border-brand-primary/20 bg-brand-cream dark:bg-brand-muted/20 flex items-center justify-center">
                   <MapPin className="h-10 w-10 text-brand-primary fill-brand-primary/10" />
                 </div>
@@ -73,20 +82,22 @@ export default function FeatureBento({ onMapClick, onAdoptClick, onVolunteerClic
             </span>
           </div>
 
-          {/* Card 2: Find a Friend (33% Width) */}
+          {/* Card 2: Find a Friend */}
           <div
             onClick={onAdoptClick}
-            className="group relative overflow-hidden rounded-3xl bg-brand-cream/40 dark:bg-brand-muted/5 border border-brand-cream dark:border-brand-muted/20 p-8 flex flex-col justify-between h-[360px] cursor-pointer hover:shadow-xl hover:border-brand-primary/20 dark:hover:border-brand-primary/30 transition-all duration-300"
+            className="group relative overflow-hidden rounded-[2rem] glass bg-gradient-to-br from-white/60 to-white/10 dark:from-white/10 dark:to-transparent p-10 flex flex-col justify-between min-h-[400px] cursor-pointer hover:shadow-2xl hover:shadow-brand-accent/20 hover:-translate-y-1 transition-all duration-500"
           >
-            <div className="space-y-4">
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-brand-dark shadow-sm border border-brand-cream dark:border-brand-muted/20 text-brand-primary">
-                <span className="font-heading font-extrabold text-base">🐾</span>
+            <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-brand-accent/20 dark:bg-brand-accent/10 rounded-full blur-[60px] pointer-events-none group-hover:scale-110 group-hover:bg-brand-accent/30 transition-all duration-700" />
+            
+            <div className="space-y-6 relative z-10">
+              <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white dark:bg-black/20 backdrop-blur-md shadow-lg border border-zinc-200 dark:border-white/10 text-brand-accent">
+                <span className="font-heading font-extrabold text-2xl">🐾</span>
               </div>
-              <div className="space-y-2">
-                <h3 className="font-heading text-xl font-bold text-brand-dark dark:text-brand-light">
+              <div className="space-y-3">
+                <h3 className="font-heading text-2xl font-bold text-zinc-900 dark:text-white">
                   Find a Friend
                 </h3>
-                <p className="text-xs text-brand-muted dark:text-brand-light/70 leading-relaxed">
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
                   Browse our gallery of rescued cats waiting for their forever homes. Get paired with your perfect companion.
                 </p>
               </div>
@@ -100,61 +111,62 @@ export default function FeatureBento({ onMapClick, onAdoptClick, onVolunteerClic
           {/* Secondary cards row */}
           {/* Card 3: Missions */}
           <div
-            onClick={onMapClick}
-            className="group rounded-2xl bg-white dark:bg-brand-dark border border-brand-cream dark:border-brand-muted/15 p-6 flex flex-col justify-between h-[200px] cursor-pointer hover:border-brand-primary/20 hover:shadow-md transition-all"
+            onClick={onMissionsClick}
+            className="group rounded-3xl glass p-8 flex flex-col justify-between min-h-[220px] cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-brand-primary/30 transition-all duration-500"
           >
-            <div className="space-y-3">
-              <div className="h-10 w-10 rounded-xl bg-brand-light dark:bg-brand-muted/25 flex items-center justify-center text-brand-primary border border-brand-cream dark:border-brand-muted/20">
-                <Shield className="h-5 w-5" />
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-brand-primary/20 to-brand-primary/5 flex items-center justify-center text-brand-primary border border-brand-primary/20">
+                <Shield className="h-6 w-6" />
               </div>
-              <div className="space-y-1">
-                <h4 className="font-heading font-bold text-brand-dark dark:text-brand-light text-sm">Missions</h4>
-                <p className="text-xs text-brand-muted dark:text-brand-light/65 leading-relaxed">
+              <div className="space-y-2">
+                <h4 className="font-heading font-bold text-zinc-900 dark:text-white text-lg">Missions</h4>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
                   Join daily tasks like feeding, colony surveys, or medical transport in your area.
                 </p>
               </div>
             </div>
-            <span className="text-xs font-semibold text-brand-primary group-hover:underline flex items-center gap-0.5">
-              Active tasks
+            <span className="text-sm font-semibold text-brand-primary group-hover:underline flex items-center gap-1 mt-4">
+              Active tasks <ChevronRight className="h-4 w-4" />
             </span>
           </div>
 
           {/* Card 4: Foster Care */}
           <div
             onClick={onVolunteerClick}
-            className="group rounded-2xl bg-white dark:bg-brand-dark border border-brand-cream dark:border-brand-muted/15 p-6 flex flex-col justify-between h-[200px] cursor-pointer hover:border-brand-primary/20 hover:shadow-md transition-all"
+            className="group rounded-3xl glass p-8 flex flex-col justify-between min-h-[220px] cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-brand-green/30 transition-all duration-500"
           >
-            <div className="space-y-3">
-              <div className="h-10 w-10 rounded-xl bg-brand-light dark:bg-brand-muted/25 flex items-center justify-center text-brand-green border border-brand-cream dark:border-brand-muted/20">
-                <Users className="h-5 w-5" />
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-brand-green/20 to-brand-green/5 flex items-center justify-center text-brand-green border border-brand-green/20">
+                <Users className="h-6 w-6" />
               </div>
-              <div className="space-y-1">
-                <h4 className="font-heading font-bold text-brand-dark dark:text-brand-light text-sm">Foster Care</h4>
-                <p className="text-xs text-brand-muted dark:text-brand-light/65 leading-relaxed">
+              <div className="space-y-2">
+                <h4 className="font-heading font-bold text-zinc-900 dark:text-white text-lg">Foster Care</h4>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
                   Provide a temporary safe haven for recovering rescues while forever homes are being prepared.
                 </p>
               </div>
             </div>
-            <span className="text-xs font-semibold text-brand-green group-hover:underline">
-              Become a Foster
+            <span className="text-sm font-semibold text-brand-green group-hover:underline flex items-center gap-1 mt-4">
+              Become a Foster <ChevronRight className="h-4 w-4" />
             </span>
           </div>
 
           {/* Card 5: Track Progress (Interactive mini portal!) */}
-          <div className="rounded-2xl bg-white dark:bg-brand-dark border border-brand-cream dark:border-brand-muted/15 p-6 flex flex-col justify-between h-[200px] hover:shadow-md transition-all">
-            <div className="space-y-3">
+          <div className="rounded-3xl glass p-8 flex flex-col justify-between min-h-[220px] hover:shadow-xl transition-all duration-500 overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none" />
+            <div className="space-y-4 relative z-10">
               <div className="flex items-center justify-between">
-                <div className="h-10 w-10 rounded-xl bg-brand-light dark:bg-brand-muted/25 flex items-center justify-center text-brand-primary border border-brand-cream dark:border-brand-muted/20">
-                  <Activity className="h-5 w-5" />
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center text-blue-500 border border-blue-500/20">
+                  <Activity className="h-6 w-6" />
                 </div>
-                <span className="text-[9px] font-bold text-brand-muted bg-brand-cream dark:bg-brand-muted/10 px-2 py-0.5 rounded-full">
-                  TRACKER
+                <span className="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full uppercase tracking-widest border border-blue-500/20">
+                  Portal
                 </span>
               </div>
               
-              <div className="space-y-1">
-                <h4 className="font-heading font-bold text-brand-dark dark:text-brand-light text-sm">Track Progress</h4>
-                <p className="text-xs text-brand-muted dark:text-brand-light/65 leading-relaxed">
+              <div className="space-y-2">
+                <h4 className="font-heading font-bold text-zinc-900 dark:text-white text-lg">Track Progress</h4>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed hidden sm:block">
                   Stay updated on the status of cats you have helped report.
                 </p>
               </div>

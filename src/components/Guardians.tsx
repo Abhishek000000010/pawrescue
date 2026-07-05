@@ -54,7 +54,7 @@ export default function Guardians() {
 
                 {/* EXP EXP floating badge at the bottom center of circle */}
                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-brand-primary border-2 border-white dark:border-brand-dark px-3 py-0.5 shadow-md flex items-center gap-1">
-                  <span className="text-[9px] font-extrabold text-white tracking-wider uppercase">
+                  <span className="text-[9px] font-extrabold text-zinc-800 dark:text-white tracking-wider uppercase">
                     EXP {guardian.exp.replace(' XP', '')}
                   </span>
                 </div>

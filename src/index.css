@@ -1,20 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Fredoka:wght@500;600;700&display=swap');
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-grotesk: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-logo: "Fredoka", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-brand-primary: #F9A826;      /* Soft Orange */
-  --color-brand-primary-hover: #E08E1B;
-  --color-brand-dark: #18181B;         /* Neutral Deep Gray/Zinc 900 */
-  --color-brand-light: #FFFFFF;        /* Pure Pristine White */
-  --color-brand-cream: #FAFAFA;        /* Neutral Zinc 50 / Warm Pure Off-white */
+  --color-brand-primary: #FF5A5F;      /* Vibrant Coral/Red */
+  --color-brand-primary-hover: #E04E53;
+  --color-brand-accent: #F9A826;       /* Warm Yellow/Orange Accent */
+  
+  --color-brand-dark: #09090B;         /* Premium Deep Zinc 950 */
+  --color-brand-dark-elevated: #18181B; /* Zinc 900 for cards */
+  
+  --color-brand-light: #FAFAFA;        /* Pristine Off-White (Zinc 50) */
+  --color-brand-light-elevated: #FFFFFF; /* Pure White for cards */
+  
   --color-brand-muted: #71717A;        /* Neutral Gray/Zinc 500 */
-  --color-brand-blue-bg: #F4F4F5;     /* Neutral Gray/Zinc 100 (for secondary backgrounds) */
-  --color-brand-green: #115E59;        /* Deep Teal Green accent */
+  --color-brand-blue-bg: #F4F4F5;     /* Neutral Gray/Zinc 100 */
+  --color-brand-green: #10B981;        /* Modern Emerald */
 }
 
 /* Base resets & improvements */
@@ -26,10 +35,25 @@ body {
   font-family: var(--font-sans);
   color: var(--color-brand-dark);
   background-color: var(--color-brand-light);
+  /* Subtle mesh pattern for light mode */
+  background-image: radial-gradient(at 100% 0%, hsla(28,100%,74%,0.08) 0px, transparent 50%),
+                    radial-gradient(at 0% 100%, hsla(355,100%,68%,0.08) 0px, transparent 50%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.dark body {
+  color: var(--color-brand-light);
+  background-color: var(--color-brand-dark);
+  /* Subtle mesh pattern for dark mode */
+  background-image: radial-gradient(at 100% 0%, hsla(28,100%,74%,0.03) 0px, transparent 50%),
+                    radial-gradient(at 0% 100%, hsla(355,100%,68%,0.03) 0px, transparent 50%);
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
+  letter-spacing: -0.02em;
 }
 
 /* Custom Hide Scrollbar classes */
@@ -39,4 +63,33 @@ h1, h2, h3, h4, h5, h6 {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Premium Glassmorphism Utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.03);
+}
+
+.dark .glass {
+  background: rgba(24, 24, 27, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Animated gradient background */
+.bg-gradient-animated {
+  background-size: 200% 200%;
+  animation: gradientMove 8s ease infinite;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }

@@ -129,8 +129,8 @@ export default function Missions() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex justify-between items-end mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-white mb-2">Volunteer Missions</h1>
-          <p className="text-gray-400">Claim a rescue mission to earn points and save lives.</p>
+          <h1 className="text-4xl font-bold text-zinc-800 dark:text-white mb-2">Volunteer Missions</h1>
+          <p className="text-zinc-600 dark:text-gray-400">Claim a rescue mission to earn points and save lives.</p>
         </div>
       </div>
 
@@ -148,14 +148,14 @@ export default function Missions() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="bg-brand-dark rounded-xl border border-white/10 overflow-hidden hover:border-brand-primary/30 transition-colors"
+                className="bg-white dark:bg-brand-dark rounded-xl border border-zinc-200 dark:border-white/10 overflow-hidden hover:border-brand-primary/30 shadow-md dark:shadow-none transition-colors"
               >
                 {mission.cat?.photos?.[0] ? (
                   <div className="h-48 w-full relative">
                     <img src={mission.cat.photos[0]} alt="Mission Cat" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-                      <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold text-white capitalize">
+                      <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold text-zinc-800 dark:text-white capitalize">
                         {mission.type}
                       </span>
                       {mission.urgency === 'urgent' && (
@@ -167,7 +167,7 @@ export default function Missions() {
                   </div>
                 ) : (
                   <div className="h-24 bg-white/5 flex items-center justify-between px-6">
-                     <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-semibold text-white capitalize">
+                     <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-semibold text-zinc-800 dark:text-white capitalize">
                         {mission.type}
                       </span>
                       {mission.urgency === 'urgent' && (
@@ -179,8 +179,8 @@ export default function Missions() {
                 )}
                 
                 <div className="p-6">
-                  <h3 className="text-lg font-bold text-white mb-2">{mission.title}</h3>
-                  <p className="text-sm text-gray-400 mb-4 line-clamp-2">{mission.description}</p>
+                  <h3 className="text-lg font-bold text-zinc-800 dark:text-white mb-2">{mission.title}</h3>
+                  <p className="text-sm text-zinc-600 dark:text-gray-400 mb-4 line-clamp-2">{mission.description}</p>
                   
                   {mission.location?.address && (
                     <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
@@ -189,7 +189,7 @@ export default function Missions() {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/10">
+                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-zinc-200 dark:border-white/10">
                     <div className="text-sm">
                       <span className="text-brand-accent font-bold">+{mission.pointsReward}</span>
                       <span className="text-gray-500 ml-1">pts</span>
@@ -241,7 +241,7 @@ export default function Missions() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-brand-dark border border-white/10 rounded-3xl w-full max-w-lg p-6 sm:p-8 relative shadow-2xl"
+              className="bg-white dark:bg-brand-dark border border-zinc-200 dark:border-white/10 rounded-3xl w-full max-w-lg p-6 sm:p-8 relative shadow-2xl"
             >
               <button 
                 onClick={() => setCompletingMissionId(null)}
@@ -254,16 +254,16 @@ export default function Missions() {
                 <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4 border border-green-500/30">
                   <CheckCircle2 className="w-8 h-8 text-green-400" />
                 </div>
-                <h2 className="text-2xl font-black text-white">Proof of Rescue</h2>
-                <p className="text-gray-400 text-sm mt-2">
+                <h2 className="text-2xl font-black text-zinc-800 dark:text-white">Proof of Rescue</h2>
+                <p className="text-zinc-600 dark:text-gray-400 text-sm mt-2">
                   Upload a photo of the rescued cat at the vet or temporary shelter to verify completion and claim your points.
                 </p>
               </div>
 
               <form onSubmit={handleComplete} className="space-y-6">
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Upload Photo</label>
-                  <div className="w-full h-32 border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center hover:bg-white/5 hover:border-brand-primary transition-all cursor-pointer relative overflow-hidden">
+                  <label className="block text-xs font-bold text-zinc-500 dark:text-gray-400 uppercase tracking-wider mb-2">Upload Photo</label>
+                  <div className="w-full h-32 border-2 border-dashed border-zinc-300 dark:border-white/20 rounded-2xl flex flex-col items-center justify-center hover:bg-zinc-50 dark:hover:bg-white/5 hover:border-brand-primary transition-all cursor-pointer relative overflow-hidden">
                     {proofPhoto ? (
                       <img src={URL.createObjectURL(proofPhoto)} alt="Proof" className="w-full h-full object-cover" />
                     ) : (
@@ -287,12 +287,12 @@ export default function Missions() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Notes (Optional)</label>
+                  <label className="block text-xs font-bold text-zinc-500 dark:text-gray-400 uppercase tracking-wider mb-2">Notes (Optional)</label>
                   <textarea 
                     value={proofNotes}
                     onChange={(e) => setProofNotes(e.target.value)}
                     placeholder="Any details about the vet visit or the cat's condition..."
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brand-primary/50 text-sm resize-none"
+                    className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-zinc-800 dark:text-white placeholder-zinc-400 dark:placeholder-gray-600 focus:outline-none focus:border-brand-primary/50 text-sm resize-none"
                     rows={3}
                   />
                 </div>

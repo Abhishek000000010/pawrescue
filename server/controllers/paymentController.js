@@ -1,15 +1,15 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
+import User from '../models/User.js';
 
 export const createOrder = async (req, res) => {
   try {
     const { amount } = req.body; 
 
-    // Retrieve keys from process.env, or fallback to the provided test keys if env didn't reload
-    const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_T6Dp9BJO5sSWlW';
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || '0mCD5TnMWGVMVmDw3Gfmboyo';
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
-    // Hackathon fallback: If no keys available
     if (!keyId || !keySecret) {
       console.log('Using simulated Razorpay (Hackathon mode)');
       return res.json({
@@ -31,7 +31,7 @@ export const createOrder = async (req, res) => {
     const options = {
       amount: amount * 100, 
       currency: "INR",
-      receipt: `receipt_order_${Math.random() * 1000}`,
+      receipt: `receipt_order_${Math.floor(Math.random() * 1000)}`,
     };
 
     const order = await instance.orders.create(options);
@@ -48,33 +48,103 @@ export const createOrder = async (req, res) => {
 
 export const verifyPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { 
+      razorpay_order_id, 
+      razorpay_payment_id, 
+      razorpay_signature, 
+      isMock, 
+      amount, 
+      name, 
+      email, 
+      address, 
+      message 
+    } = req.body;
     
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || '0mCD5TnMWGVMVmDw3Gfmboyo';
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
-    // Hackathon fallback: auto-verify if using mock keys
-    if (!keySecret) {
-      return res.json({
-        success: true,
-        message: 'Payment verified successfully (Mock Mode)!'
-      });
+    let isAuthentic = false;
+
+    if (isMock) {
+      isAuthentic = true;
+    } else {
+      const body = razorpay_order_id + "|" + razorpay_payment_id;
+      const expectedSignature = crypto
+        .createHmac('sha256', keySecret)
+        .update(body.toString())
+        .digest('hex');
+      isAuthentic = expectedSignature === razorpay_signature;
     }
 
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-
-    const expectedSignature = crypto
-      .createHmac('sha256', keySecret)
-      .update(body.toString())
-      .digest('hex');
-
-    const isAuthentic = expectedSignature === razorpay_signature;
-
     if (isAuthentic) {
-      // Payment is successful! We could save it to a Donation model here.
-      // For now, we just return success.
+      // 1. Save to DB (add points to user and record donation)
+      if (req.user && req.user._id) {
+        await User.findByIdAndUpdate(req.user._id, {
+          $inc: { points: amount },
+          $push: { 
+            donations: { 
+              amount, 
+              transactionId: razorpay_payment_id || 'MOCK_TXN_' + Math.floor(Math.random() * 10000), 
+              address: address || 'N/A'
+            } 
+          }
+        });
+      }
+
+      // 2. Send Email Receipt via Nodemailer
+      if (email && process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+        try {
+          const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT || 587,
+            secure: false, // true for 465, false for other ports
+            auth: {
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASS,
+            },
+          });
+
+          const receiptHTML = `
+            <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+              <h2 style="color: #fb923c; text-align: center;">PawNet Rescue</h2>
+              <h3 style="text-align: center; color: #333;">Thank you for your donation!</h3>
+              <p>Hi ${name || 'Supporter'},</p>
+              <p>We have successfully received your generous donation. Your support helps us provide food, medical care, and safe homes for stray cats.</p>
+              
+              <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h4 style="margin-top: 0; color: #555; text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">Official Donation Receipt</h4>
+                <p style="margin: 5px 0;"><strong>Amount:</strong> ₹${amount}</p>
+                <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                <p style="margin: 5px 0;"><strong>Name:</strong> ${name}</p>
+                <p style="margin: 5px 0;"><strong>Address:</strong> ${address || 'N/A'}</p>
+                <p style="margin: 5px 0;"><strong>Transaction ID:</strong> ${razorpay_payment_id || 'MOCK_TXN_' + Math.floor(Math.random() * 10000)}</p>
+              </div>
+
+              ${message ? `<p><strong>Your Message:</strong> <em>"${message}"</em></p>` : ''}
+              
+              <p>You have earned <strong>+${amount} XP</strong> on your PawNet profile!</p>
+              <p style="font-size: 12px; color: #888; text-align: center; margin-top: 30px;">This is an automated 80G tax-compliant receipt generated by PawNet. Please keep this email for your records.</p>
+            </div>
+          `;
+
+          await transporter.sendMail({
+            from: '"PawNet Rescue" <' + process.env.SMTP_USER + '>',
+            to: email,
+            subject: "Your Donation Receipt - PawNet Rescue",
+            html: receiptHTML,
+          });
+          
+          console.log('Donation receipt emailed to:', email);
+        } catch (emailError) {
+          console.error("Failed to send receipt email:", emailError);
+          // Don't fail the payment if email fails
+        }
+      } else {
+        console.log("SMTP not fully configured or no email provided, skipping receipt email.");
+      }
+
       res.json({
         success: true,
-        message: 'Payment verified successfully!'
+        message: 'Payment verified and receipt processed!'
       });
     } else {
       res.status(400).json({

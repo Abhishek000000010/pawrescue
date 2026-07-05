@@ -61,10 +61,9 @@ const generateNearbyData = (centerLat: number, centerLng: number): RescueMarker[
     { name: 'Happy Paws Cat Clinic', rating: 4.5, status: 'Surgical discounts active' },
     { name: 'Dr. Roy Veterinary Clinic', rating: 4.9, status: 'Advanced feline diagnostic care' }
   ];
-  const baseFosters = [
-    { name: 'Sunny Days Foster Safehouse', rating: 4.9, status: '2 kitten quarantine spots open' },
-    { name: 'Green Park Sanctuary', rating: 4.7, status: 'Intake open' }
-  ];
+  // Fosters are NOT faked here — they come only from real opted-in Guardians
+  // via fetchNearbyFosters(). Keeping this empty avoids fictional foster pins.
+  const baseFosters: { name: string; rating: number; status: string }[] = [];
   const baseCats = [
     { name: 'Oliver', type: 'Emergency' as const, status: 'Front leg injured. Shivering and hiding.', priority: 'High' as const, image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=600', reportedBy: 'Anjali Sharma', filterCategory: 'injured' as const },
     { name: 'Mochi', type: 'Rescue Needed' as const, status: 'Heavily pregnant, nesting in dry garage.', priority: 'Critical' as const, image: 'https://images.unsplash.com/photo-1574158622643-69d34d72650a?auto=format&fit=crop&q=80&w=600', reportedBy: 'Karan Malhotra', filterCategory: 'pregnant' as const }
@@ -157,21 +156,57 @@ const fetchRealVetsAndShelters = async (centerLat: number, centerLng: number): P
   }
 };
 
+// Fetch REAL, opted-in foster homes registered by our own Guardians.
+// The backend only returns approximate coordinates (privacy), never exact homes.
+const fetchNearbyFosters = async (centerLat: number, centerLng: number): Promise<RescueMarker[]> => {
+  try {
+    const res = await fetch(`/api/auth/fosters?lat=${centerLat}&lng=${centerLng}&radius=25`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const fosters = data.fosters || [];
+
+    return fosters
+      .filter((f: any) => typeof f.approxLat === 'number' && typeof f.approxLng === 'number')
+      .map((f: any) => ({
+        id: `foster-${f.id}`,
+        type: 'Shelter' as const,
+        name: `${f.firstName}'s Foster Home`,
+        status: `Foster space available • ${f.area}`,
+        distance: f.distance != null ? `${f.distance} km` : '—',
+        priority: 'Low' as const,
+        lat: f.approxLat,
+        lng: f.approxLng,
+        image: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?auto=format&fit=crop&q=80&w=600',
+        reportedBy: 'Registered PawNet Guardian',
+        reportedTime: f.availability ? `Available ~${f.availability} hrs/week` : 'Community foster',
+        aiAnalysis: [
+          'Verified PawNet Guardian',
+          'Approximate area shown for privacy',
+          'Contact coordinated through PawNet',
+        ],
+        filterCategory: 'foster' as const,
+      }));
+  } catch (err) {
+    console.error('Foster fetch error:', err);
+    return [];
+  }
+};
+
 // Initial Events Feed List
 const INITIAL_TIMELINE: TimelineEvent[] = [];
 
 // Helper to render customized Leaflet Pin Icons
 const getPinIconHtml = (type: string, isSelected: boolean) => {
   const colors: Record<string, string> = {
-    'Emergency': 'bg-red-500 border-red-100 text-white shadow-red-500/40',
-    'Rescue Needed': 'bg-amber-500 border-amber-100 text-white shadow-amber-500/40',
-    'Adoption': 'bg-emerald-500 border-emerald-100 text-white shadow-emerald-500/40',
-    'Shelter': 'bg-blue-500 border-blue-100 text-white shadow-blue-500/40',
-    'Vet': 'bg-purple-500 border-purple-100 text-white shadow-purple-500/40',
-    'Feeding Station': 'bg-yellow-500 border-yellow-100 text-white shadow-yellow-500/40',
-    'Water Station': 'bg-sky-500 border-sky-100 text-white shadow-sky-500/40',
-    'Volunteer': 'bg-emerald-600 border-emerald-200 text-white shadow-emerald-600/40',
-    'Colony': 'bg-zinc-500 border-zinc-100 text-white shadow-zinc-500/40'
+    'Emergency': 'bg-red-500 border-red-100 text-zinc-800 dark:text-white shadow-red-500/40',
+    'Rescue Needed': 'bg-amber-500 border-amber-100 text-zinc-800 dark:text-white shadow-amber-500/40',
+    'Adoption': 'bg-emerald-500 border-emerald-100 text-zinc-800 dark:text-white shadow-emerald-500/40',
+    'Shelter': 'bg-blue-500 border-blue-100 text-zinc-800 dark:text-white shadow-blue-500/40',
+    'Vet': 'bg-purple-500 border-purple-100 text-zinc-800 dark:text-white shadow-purple-500/40',
+    'Feeding Station': 'bg-yellow-500 border-yellow-100 text-zinc-800 dark:text-white shadow-yellow-500/40',
+    'Water Station': 'bg-sky-500 border-sky-100 text-zinc-800 dark:text-white shadow-sky-500/40',
+    'Volunteer': 'bg-emerald-600 border-emerald-200 text-zinc-800 dark:text-white shadow-emerald-600/40',
+    'Colony': 'bg-zinc-500 border-zinc-100 text-zinc-800 dark:text-white shadow-zinc-500/40'
   };
 
   const svgs: Record<string, string> = {
@@ -185,7 +220,7 @@ const getPinIconHtml = (type: string, isSelected: boolean) => {
     'Volunteer': `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`
   };
 
-  const bgClass = colors[type] || 'bg-zinc-500 text-white';
+  const bgClass = colors[type] || 'bg-zinc-500 text-zinc-800 dark:text-white';
   const svgIcon = svgs[type] || svgs['Rescue Needed'];
 
   return `
@@ -213,6 +248,23 @@ export default function RescueCommandCenter() {
   // Filters and Marker selection
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [selectedMarker, setSelectedMarker] = useState<RescueMarker | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<string>('Loading address...');
+
+  useEffect(() => {
+    if (selectedMarker) {
+      setSelectedAddress('Loading address...');
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${selectedMarker.lat}&lon=${selectedMarker.lng}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.display_name) {
+            setSelectedAddress(data.display_name);
+          } else {
+            setSelectedAddress('Address not found');
+          }
+        })
+        .catch(() => setSelectedAddress('Failed to load address'));
+    }
+  }, [selectedMarker]);
 
   // Coordinates and Live GPS discovery
   const [userCoords, setUserCoords] = useState<[number, number]>([28.6139, 77.2090]); // Delhi fallback default
@@ -382,12 +434,13 @@ export default function RescueCommandCenter() {
     const fetchCatsAndGenerateMarkers = async () => {
       let combinedMarkers: RescueMarker[] = [];
 
+      let realCatMarkers: RescueMarker[] = [];
       try {
         const response = await fetch('/api/cats');
         if (response.ok) {
           const data = await response.json();
           const actualCats = data.cats || [];
-          const realCatMarkers: RescueMarker[] = actualCats.map((cat: any) => {
+          realCatMarkers = actualCats.map((cat: any) => {
             // Add a tiny random jitter (~10-20 meters) to prevent perfect overlapping of pins from the same location
             const jitterLat = (Math.random() - 0.5) * 0.0004;
             const jitterLng = (Math.random() - 0.5) * 0.0004;
@@ -410,25 +463,29 @@ export default function RescueCommandCenter() {
               filterCategory: cat.severity === 'critical' ? 'emergency' : 'injured'
             };
           });
-          // Force a small delay to ensure loading states complete
-          await new Promise(resolve => setTimeout(resolve, 300));
-
-          // Fetch REAL vets and shelters from OpenStreetMap based on user's location
-          const realVets = await fetchRealVetsAndShelters(centerCoords[0], centerCoords[1]);
-          
-          // Only combine if we actually get data, else use fallback
-          if (realVets.length > 0) {
-             combinedMarkers = [...realCatMarkers, ...realVets];
-          } else {
-             const fallbackData = generateNearbyData(centerCoords[0], centerCoords[1]);
-             combinedMarkers = [...realCatMarkers, ...fallbackData];
-          }
-        } else {
-           combinedMarkers = generateNearbyData(centerCoords[0], centerCoords[1]);
         }
       } catch (err) {
         console.error('Failed to fetch real cats for map', err);
-        combinedMarkers = generateNearbyData(centerCoords[0], centerCoords[1]);
+      }
+
+      try {
+        // Fetch REAL vets/shelters (OpenStreetMap) and REAL opted-in fosters (our DB)
+        const [realVets, realFosters] = await Promise.all([
+          fetchRealVetsAndShelters(centerCoords[0], centerCoords[1]),
+          fetchNearbyFosters(centerCoords[0], centerCoords[1]),
+        ]);
+
+        // Only combine if we actually get data, else use fallback
+        if (realVets.length > 0) {
+           combinedMarkers = [...realCatMarkers, ...realVets, ...realFosters];
+        } else {
+           const fallbackData = generateNearbyData(centerCoords[0], centerCoords[1]);
+           combinedMarkers = [...realCatMarkers, ...fallbackData, ...realFosters];
+        }
+      } catch (err) {
+        console.error('Failed to fetch real vets/fosters for map', err);
+        const fallbackData = generateNearbyData(centerCoords[0], centerCoords[1]);
+        combinedMarkers = [...realCatMarkers, ...fallbackData];
       }
 
       if (isActive) {
@@ -511,6 +568,11 @@ export default function RescueCommandCenter() {
       playBeep(900, 'sine', 0.05);
     });
 
+    // Fix empty tile rendering issues by invalidating size after mount
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
@@ -534,12 +596,11 @@ export default function RescueCommandCenter() {
       tileLayerRef.current.remove();
     }
 
-    const tileUrl = isDarkTheme
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+    const tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
     const newTiles = L.tileLayer(tileUrl, {
-      attribution: '&copy; OpenStreetMap contributors'
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+      maxZoom: 19
     }).addTo(mapRef.current);
 
     tileLayerRef.current = newTiles;
@@ -578,7 +639,7 @@ export default function RescueCommandCenter() {
       const pinNewHtml = `
         <div class="relative flex items-center justify-center">
           <div class="absolute -inset-3 rounded-full bg-amber-500/35 animate-pulse"></div>
-          <div class="h-9 w-9 rounded-full border-2 border-white bg-amber-500 shadow-lg flex items-center justify-center text-white">
+          <div class="h-9 w-9 rounded-full border-2 border-white bg-amber-500 shadow-lg flex items-center justify-center text-zinc-800 dark:text-white">
             <svg class="w-5 h-5 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           </div>
           <div class="absolute -bottom-1 h-2 w-2 rotate-45 border-r border-b border-white shadow bg-amber-500"></div>
@@ -812,10 +873,12 @@ export default function RescueCommandCenter() {
   };
 
   return (
-    <div id="rescue-operations-center" className="bg-[#FAF9F6] dark:bg-zinc-950 min-h-screen pt-20 pb-8 px-6 font-sans transition-colors duration-300">
+    <div id="rescue-operations-center" className="relative h-[calc(100vh-80px)] font-sans transition-colors duration-300 overflow-hidden bg-white dark:bg-zinc-950 flex flex-col">
+      {/* Background Mesh Gradient (Optional reinforcement for the live center) */}
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-brand-primary/5 rounded-full blur-[120px] pointer-events-none -z-10" />
       
       {/* ================= COMMAND CENTER TOP NAVIGATION & CONTROL BAR ================= */}
-      <div className="max-w-[1400px] mx-auto mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="px-6 w-full mx-auto mb-4 flex flex-col md:flex-row items-center justify-between gap-4 shrink-0">
         
         {/* Brand / Title Left */}
         <div className="flex items-center gap-3">
@@ -873,7 +936,7 @@ export default function RescueCommandCenter() {
               onClick={() => { setIsVolunteerMode(true); playBeep(900); }}
               className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                 isVolunteerMode 
-                  ? 'bg-brand-primary text-white shadow-md' 
+                  ? 'bg-brand-primary text-zinc-800 dark:text-white shadow-md' 
                   : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-700'
               }`}
             >
@@ -884,7 +947,7 @@ export default function RescueCommandCenter() {
           {/* Alarm Bell notification */}
           <button className="relative p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/55 dark:border-zinc-800/40 hover:bg-zinc-50 text-zinc-600 dark:text-zinc-300 transition-all cursor-pointer">
             <Bell className="h-4 w-4" />
-            <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-[#FF5A5F] text-[9px] font-extrabold text-white flex items-center justify-center shadow-sm">3</span>
+            <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-[#FF5A5F] text-[9px] font-extrabold text-zinc-800 dark:text-white flex items-center justify-center shadow-sm">3</span>
           </button>
 
           {/* User Profile avatar */}
@@ -896,13 +959,13 @@ export default function RescueCommandCenter() {
       </div>
 
       {/* ================= MAIN INTERFACE SCREEN SPLIT ================= */}
-      <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="w-full flex-1 flex flex-col lg:flex-row items-stretch border-t border-zinc-200 dark:border-zinc-800 min-h-0">
         
-        {/* ----------------- LEFT SIDEBAR (LG: 3 COLS) ----------------- */}
-        <div className="lg:col-span-3 flex flex-col gap-4">
+        {/* ----------------- LEFT SIDEBAR ----------------- */}
+        <div className="w-full lg:w-[320px] shrink-0 flex flex-col overflow-y-auto no-scrollbar border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 pb-10">
           
           {/* Section 1: Rescue Filters */}
-          <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-[20px] border border-zinc-200/50 dark:border-zinc-800/40 overflow-hidden shadow-sm">
+          <div className="border-b border-zinc-200 dark:border-zinc-800/50">
             <button
               onClick={() => setCollapseFilters(!collapseFilters)}
               className="w-full px-5 py-4 flex items-center justify-between font-black text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
@@ -954,7 +1017,7 @@ export default function RescueCommandCenter() {
           </div>
 
           {/* Section 2: ⭐ Highly Rated Vets & Fosters (4+ Stars near me) */}
-          <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-[20px] border border-zinc-200/50 dark:border-zinc-800/40 overflow-hidden shadow-sm p-5 space-y-3">
+          <div className="p-5 space-y-3 border-b border-zinc-200 dark:border-zinc-800/50">
             <span className="text-[11px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
               <Star className="h-4 w-4 fill-current text-amber-500 animate-pulse" /> 4+ STAR PARTNERS NEAR ME
             </span>
@@ -991,94 +1054,15 @@ export default function RescueCommandCenter() {
             </div>
           </div>
 
-          {/* Section 3: Nearby Resources (Sorted dynamically by direct distance) */}
-          <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-[20px] border border-zinc-200/50 dark:border-zinc-800/40 overflow-hidden shadow-sm">
-            <button
-              onClick={() => setCollapseResources(!collapseResources)}
-              className="w-full px-5 py-4 flex items-center justify-between font-black text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
-            >
-              <span className="flex items-center gap-2">📍 NEAREST RESOURCES</span>
-              {collapseResources ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-            </button>
 
-            <AnimatePresence initial={false}>
-              {!collapseResources && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="px-5 pb-5 pt-1 space-y-2 border-t border-zinc-100/50 dark:border-zinc-800/20"
-                >
-                  {dynamicResources.map((res) => (
-                    <div
-                      key={res.id}
-                      onClick={() => {
-                        if (res.rawMarker) {
-                          setSelectedMarker(res.rawMarker);
-                          if (mapRef.current) {
-                            mapRef.current.panTo([res.rawMarker.lat, res.rawMarker.lng]);
-                          }
-                          playBeep(950);
-                        }
-                      }}
-                      className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-100/40 dark:border-zinc-800/30 flex flex-col gap-1 hover:border-zinc-200 dark:hover:border-zinc-700 transition-all cursor-pointer"
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-1.5">
-                          {res.type === 'Shelter' && <Home className="h-3.5 w-3.5 text-blue-500" />}
-                          {res.type === 'Vet' && <Stethoscope className="h-3.5 w-3.5 text-purple-500" />}
-                          {res.type === 'Feeding Station' && <Utensils className="h-3.5 w-3.5 text-yellow-500" />}
-                          {res.type === 'Water Station' && <Droplets className="h-3.5 w-3.5 text-sky-500" />}
-                          {res.type === 'Volunteer' && <Users className="h-3.5 w-3.5 text-emerald-500" />}
-                          {res.name}
-                        </span>
-                        <span className="text-[10px] font-mono font-black text-brand-primary shrink-0">{res.distance}</span>
-                      </div>
-                      <span className="text-[10px] text-zinc-400 font-semibold pl-5 truncate">{res.status}</span>
-                    </div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Section 4: Quick Actions */}
-          <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-[20px] border border-zinc-200/50 dark:border-zinc-800/40 p-5 shadow-sm space-y-3">
-            <span className="text-[11px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1">🛠️ QUICK ACTIONS</span>
-            
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => {
-                  playBeep(1000);
-                  setCustomReportCoords({ lat: centerCoords[0] + 0.001, lng: centerCoords[1] + 0.001 }); // Center placement fallback trigger
-                  setSelectedMarker(null);
-                }}
-                className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-brand-primary text-white hover:bg-brand-primary/95 shadow-md shadow-brand-primary/10 transition-all cursor-pointer text-center"
-              >
-                <Plus className="h-4 w-4 mb-1" />
-                <span className="text-[9px] font-black uppercase tracking-wider">Report Cat</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  playBeep(900);
-                  setIsVolunteerMode(true);
-                }}
-                className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900 text-brand-primary hover:bg-orange-100 transition-all cursor-pointer text-center"
-              >
-                <Star className="h-4 w-4 mb-1" />
-                <span className="text-[9px] font-black uppercase tracking-wider">Find Mission</span>
-              </button>
-            </div>
-          </div>
 
         </div>
 
-        {/* ----------------- CENTER MAP WORKSPACE (LG: 6 COLS) ----------------- */}
-        <div className="lg:col-span-6 flex flex-col gap-6">
+        {/* ----------------- CENTER MAP WORKSPACE ----------------- */}
+        <div className="flex-1 flex flex-col h-full relative">
           
           {/* MAP CANVAS PANEL */}
-          <div className="relative min-h-[560px] lg:h-[620px] rounded-[24px] overflow-hidden border border-zinc-200/55 dark:border-zinc-800/40 bg-zinc-900 flex flex-col shadow-sm">
+          <div className="flex-1 relative bg-zinc-100 dark:bg-zinc-900 flex flex-col overflow-hidden">
             
             {/* Top-left: Map View vs Heatmap View pill overlay */}
             <div className="absolute top-4 left-4 z-20 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl p-1 shadow-md border border-zinc-200/40 dark:border-zinc-800/40 flex items-center">
@@ -1086,7 +1070,7 @@ export default function RescueCommandCenter() {
                 onClick={() => { setIsHeatmap(false); playBeep(); }}
                 className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                   !isHeatmap 
-                    ? 'bg-brand-primary text-white shadow-sm' 
+                    ? 'bg-brand-primary text-zinc-800 dark:text-white shadow-sm' 
                     : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
                 }`}
               >
@@ -1096,7 +1080,7 @@ export default function RescueCommandCenter() {
                 onClick={() => { setIsHeatmap(true); setSelectedMarker(null); playBeep(); }}
                 className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                   isHeatmap 
-                    ? 'bg-brand-primary text-white shadow-sm' 
+                    ? 'bg-brand-primary text-zinc-800 dark:text-white shadow-sm' 
                     : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
                 }`}
               >
@@ -1128,7 +1112,7 @@ export default function RescueCommandCenter() {
             </div>
 
             {/* REAL LEAFLET STREET MAP CONTAINER */}
-            <div id={mapContainerId} className="w-full h-full z-10" />
+            <div id={mapContainerId} className="absolute inset-0 z-10" />
 
             {/* ================= BOTTOM-LEFT: LIVE TRACKING CONSOLE CARD ================= */}
             {isVolunteerMode && (
@@ -1226,7 +1210,7 @@ export default function RescueCommandCenter() {
                       <button
                         type="button"
                         onClick={() => setCustomReportCoords(null)}
-                        className="p-2 border border-zinc-200 dark:border-zinc-800 text-zinc-500 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                        className="p-2 border border-zinc-200 dark:border-zinc-800 text-zinc-500 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-50 dark:bg-zinc-800 cursor-pointer"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -1236,21 +1220,16 @@ export default function RescueCommandCenter() {
               )}
             </AnimatePresence>
 
-          </div>
-
-        </div>
-
-        {/* ----------------- RIGHT FLOATING INFO PANEL (LG: 3 COLS) ----------------- */}
-        <div className="lg:col-span-3">
-          <AnimatePresence mode="wait">
-            {selectedMarker ? (
-              <motion.div
-                key={selectedMarker.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-[20px] border border-zinc-200/50 dark:border-zinc-800/40 shadow-sm overflow-hidden flex flex-col relative"
-              >
+            {/* ----------------- RIGHT FLOATING INFO PANEL (INSIDE MAP CONTAINER) ----------------- */}
+            <AnimatePresence mode="wait">
+              {selectedMarker && (
+                <motion.div
+                  key={selectedMarker.id}
+                  initial={{ opacity: 0, x: 340 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 340 }}
+                  className="absolute top-4 right-4 bottom-4 w-full md:w-[340px] z-[400] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl rounded-[20px] border border-zinc-200/50 dark:border-zinc-800/50 shadow-2xl overflow-y-auto no-scrollbar flex flex-col"
+                >
                 {/* Deselect/Close Button */}
                 <button
                   onClick={() => { setSelectedMarker(null); playBeep(400); }}
@@ -1309,6 +1288,7 @@ export default function RescueCommandCenter() {
                         <span className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Location Status</span>
                         <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mt-0.5">{selectedMarker.status.split('•')[0]}</p>
                         <span className="text-[9px] font-semibold text-brand-primary mt-0.5 block">{selectedMarker.distance} away from center</span>
+                        <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed max-w-[200px]">{selectedAddress}</p>
                       </div>
                     </div>
 
@@ -1362,13 +1342,11 @@ export default function RescueCommandCenter() {
                     <button 
                       onClick={() => {
                         playBeep(1000);
-                        if (mapRef.current) {
-                          mapRef.current.setView([selectedMarker.lat, selectedMarker.lng], 16);
-                        }
+                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${selectedMarker.lat},${selectedMarker.lng}`, '_blank');
                       }}
-                      className="py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-black uppercase tracking-wider text-[9px] hover:bg-zinc-50 dark:hover:bg-zinc-850 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                      className="py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-brand-primary font-black uppercase tracking-wider text-[9px] hover:bg-brand-primary/10 flex items-center justify-center gap-1 transition-all cursor-pointer"
                     >
-                      <Compass className="h-3.5 w-3.5" /> Navigate Pin
+                      <Navigation className="h-3.5 w-3.5" /> Navigate Here
                     </button>
                     <button 
                       onClick={() => playBeep(1050)}
@@ -1380,80 +1358,15 @@ export default function RescueCommandCenter() {
 
                 </div>
               </motion.div>
-            ) : (
-              <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-[20px] border border-zinc-200/50 dark:border-zinc-800/40 p-10 text-center shadow-sm">
-                <Info className="h-6 w-6 text-zinc-400 mx-auto mb-2" />
-                <h4 className="text-xs font-black uppercase text-zinc-500 tracking-wider">No Pin Selected</h4>
-                <p className="text-[10px] text-zinc-400 mt-1 leading-normal">
-                  Select any partner vet clinic, foster home, feeding pod, or reported stray on the map to trigger GPS details, contact records, and active dispatch controls.
-                </p>
-              </div>
-            )}
-          </AnimatePresence>
-        </div>
-
-      </div>
-
-      {/* ================= BOTTOM PANEL: LIVE ACTIVITY TIMELINE ================= */}
-      <div className="max-w-[1400px] mx-auto mt-6 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-[20px] border border-zinc-200/50 dark:border-zinc-800/40 p-5 shadow-sm">
-        
-        {/* Header timeline info */}
-        <div className="flex items-center justify-between border-b border-zinc-150 dark:border-zinc-800/60 pb-3 mb-4">
-          <span className="text-[11px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-            📡 Live Operations Feed Ticker <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          </span>
-          <button 
-            onClick={() => playBeep(850)} 
-            className="text-[10px] font-black uppercase text-brand-primary tracking-widest hover:underline cursor-pointer"
-          >
-            View All
-          </button>
-        </div>
-
-        {/* Horizontal scrollable row of dispatch actions */}
-        <div className="flex flex-col md:flex-row items-stretch gap-4 overflow-x-auto no-scrollbar py-1">
-          {timelineEvents.map((evt, i) => (
-            <div key={evt.id} className="flex-1 flex items-center gap-3 relative min-w-[220px]">
-              
-              {/* Event card details container */}
-              <div className="flex-1 bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-100/55 dark:border-zinc-850 rounded-xl p-3 flex items-center gap-3">
-                
-                {/* Visual Circle thumbnail, either user avatar or cat image */}
-                {evt.image ? (
-                  <div className={`h-10 w-10 shrink-0 overflow-hidden ${evt.isAvatar ? 'rounded-full' : 'rounded-lg'} border border-zinc-200/40`}>
-                    <img src={evt.image} alt={evt.title} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
-                  </div>
-                ) : (
-                  <div className="h-10 w-10 shrink-0 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary">
-                    <Heart className="h-4 w-4 fill-current" />
-                  </div>
-                )}
-
-                {/* Event info text */}
-                <div className="min-w-0 flex-1">
-                  <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${evt.badgeBg}`}>
-                    {evt.badge}
-                  </span>
-                  <h6 className="text-[11px] font-black text-zinc-800 dark:text-zinc-100 truncate mt-1">{evt.title}</h6>
-                  <p className="text-[10px] text-zinc-400 font-semibold truncate mt-0.5">{evt.description}</p>
-                </div>
-
-                <span className="text-[9px] font-mono text-zinc-400 shrink-0 self-start">{evt.time}</span>
-              </div>
-
-              {/* Connecting line between cards for visual timelines */}
-              {i < timelineEvents.length - 1 && (
-                <div className="hidden md:flex items-center absolute -right-2 top-1/2 -translate-y-1/2 z-10">
-                  <div className="h-px w-4 bg-zinc-200 dark:bg-zinc-800" />
-                  <div className="h-2 w-2 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-                </div>
               )}
-
-            </div>
-          ))}
+            </AnimatePresence>
+            
+          </div>
         </div>
 
       </div>
+
+
 
     </div>
   );

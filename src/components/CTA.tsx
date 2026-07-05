@@ -8,57 +8,57 @@ interface CTAProps {
 
 export default function CTA({ onJoinClick, onHelpClick }: CTAProps) {
   return (
-    <section className="py-16 bg-white dark:bg-brand-dark overflow-hidden">
+    <section className="py-24 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
         
         {/* Curvaceous CTA Card container */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="relative rounded-[2.5rem] bg-brand-cream dark:bg-brand-muted/15 border border-slate-200/80 dark:border-brand-muted/10 p-8 sm:p-16 text-center space-y-6 overflow-hidden shadow-sm"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="relative rounded-[3rem] glass p-10 sm:p-20 text-center space-y-8 overflow-hidden shadow-2xl"
         >
           {/* Subtle warm ambient circles */}
-          <div className="absolute -top-12 -left-12 h-48 w-48 rounded-full bg-brand-primary/5 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-12 -right-12 h-64 w-64 rounded-full bg-brand-primary/10 blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-brand-primary/20 blur-[80px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-brand-accent/20 blur-[100px] pointer-events-none" />
 
-          <div className="max-w-2xl mx-auto space-y-4 relative z-10">
+          <div className="max-w-2xl mx-auto space-y-6 relative z-10">
             {/* Sparkles Floating Icon */}
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-brand-dark text-brand-primary shadow-sm">
-              <Sparkles className="h-5 w-5 fill-brand-primary/5" />
-            </div>
+            <motion.div 
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 4 }}
+              className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-brand-primary shadow-lg"
+            >
+              <Sparkles className="h-6 w-6 fill-brand-primary/20" />
+            </motion.div>
 
-            <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-extrabold text-brand-dark dark:text-brand-light leading-tight tracking-tight">
+            <h2 className="font-heading text-4xl sm:text-5xl md:text-6xl font-extrabold text-zinc-900 dark:text-white leading-tight tracking-tight">
               Be the reason a stray survives <br />
-              <span className="text-brand-primary">another day.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-accent">another day.</span>
             </h2>
 
-            <p className="text-sm sm:text-base text-brand-muted dark:text-brand-light/75 leading-relaxed max-w-lg mx-auto">
+            <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-lg mx-auto font-medium">
               Every contribution, big or small, helps us provide food, medical care, and warm homes for cats in need.
             </p>
           </div>
 
           {/* Large Action triggers */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4 relative z-10">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 relative z-10">
             <button
               onClick={onJoinClick}
-              className="rounded-xl bg-brand-primary hover:bg-brand-primary-hover px-7 py-3.5 font-bold text-white shadow-xl transition-all hover:scale-[1.01] active:scale-95 text-sm flex items-center justify-center gap-1.5"
+              className="rounded-2xl bg-gradient-to-r from-brand-primary to-brand-accent px-8 py-4 font-bold text-white shadow-xl shadow-brand-primary/20 transition-all hover:scale-[1.02] active:scale-95 text-base flex items-center justify-center gap-2 group"
             >
-              <Heart className="h-4.5 w-4.5 fill-white/10" />
+              <Heart className="h-5 w-5 fill-white/20 group-hover:scale-110 transition-transform" />
               Join the Community
             </button>
             
             <button
               onClick={onHelpClick}
-              className="rounded-xl border border-brand-dark/25 dark:border-brand-light/20 hover:border-brand-primary bg-white/70 dark:bg-transparent px-7 py-3.5 font-bold text-brand-dark dark:text-brand-light hover:bg-white dark:hover:bg-brand-light/10 transition-all text-sm"
+              className="glass rounded-2xl px-8 py-4 font-bold text-zinc-900 dark:text-white hover:bg-white/50 dark:hover:bg-white/10 transition-all text-base hover:scale-[1.02] active:scale-95"
             >
               Start Helping
             </button>
-          </div>
-
-          <div className="text-[10px] text-brand-muted font-semibold tracking-wider uppercase pt-4 relative z-10">
-            Already 3,500+ Guardians strong • Since 2024
           </div>
         </motion.div>
         

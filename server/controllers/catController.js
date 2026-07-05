@@ -131,6 +131,18 @@ export const reportCat = async (req, res) => {
       }
     }
 
+    try {
+      await import('../models/Notification.js').then(({ default: Notification }) => {
+        Notification.create({
+          title: 'New Cat Reported',
+          message: `A ${severity} severity cat was reported at ${address}.`,
+          type: 'cat_reported'
+        });
+      });
+    } catch (e) {
+      console.error('Failed to create notification', e);
+    }
+
     try { getIO().emit('new_cat_report', cat); } catch (e) {
       console.error('Socket emit error for cat:', e);
     }

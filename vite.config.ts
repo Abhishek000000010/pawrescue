@@ -22,6 +22,11 @@ export default defineConfig(() => {
           target: 'http://localhost:5000',
           changeOrigin: true,
         },
+        '/overpass': {
+          target: 'https://overpass-api.de/api',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/overpass/, '')
+        },
       },
     },
   };

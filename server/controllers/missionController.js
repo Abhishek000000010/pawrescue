@@ -107,7 +107,7 @@ export const completeMission = async (req, res) => {
       return res.status(403).json({ message: 'You are not authorized to complete this mission' });
     }
 
-    mission.status = 'completed';
+    mission.status = 'pending_approval';
     mission.completedAt = new Date();
     if (req.file) {
       mission.completionProof = [req.file.path];
@@ -117,10 +117,41 @@ export const completeMission = async (req, res) => {
     }
     await mission.save();
 
+    const populatedMission = await Mission.findById(mission._id)
+      .populate('cat')
+      .populate('createdBy', 'name')
+      .populate('claimedBy', 'name avatar');
+
+    getIO().emit('mission_updated', populatedMission);
+
+    res.json(populatedMission);
+  } catch (error) {
+    res.status(500).json({ message: 'Error completing mission', error: error.message });
+  }
+};
+
+export const approveMission = async (req, res) => {
+  try {
+    const mission = await Mission.findById(req.params.id).populate('claimedBy');
+
+    if (!mission) {
+      return res.status(404).json({ message: 'Mission not found' });
+    }
+
+    if (mission.status !== 'pending_approval') {
+      return res.status(400).json({ message: 'Mission is not pending approval' });
+    }
+
+    mission.status = 'completed';
+    await mission.save();
+
     // Reward points to user
-    req.user.points = (req.user.points || 0) + mission.pointsReward;
-    req.user.missionsCompleted = (req.user.missionsCompleted || 0) + 1;
-    await req.user.save();
+    const user = mission.claimedBy;
+    if (user) {
+      user.points = (user.points || 0) + mission.pointsReward;
+      user.missionsCompleted = (user.missionsCompleted || 0) + 1;
+      await user.save();
+    }
 
     // If linked to a cat rescue, update cat status
     if (mission.cat && mission.type === 'rescue') {
@@ -129,7 +160,7 @@ export const completeMission = async (req, res) => {
         cat.status = 'rescued';
         cat.rescueTimeline.push({
           status: 'rescued',
-          note: `Cat successfully rescued by ${req.user.name}`,
+          note: `Cat successfully rescued by ${user.name} (Approved by Admin)`,
           updatedBy: req.user._id,
           timestamp: new Date()
         });
@@ -147,6 +178,37 @@ export const completeMission = async (req, res) => {
 
     res.json(populatedMission);
   } catch (error) {
-    res.status(500).json({ message: 'Error completing mission', error: error.message });
+    res.status(500).json({ message: 'Error approving mission', error: error.message });
+  }
+};
+
+export const rejectMission = async (req, res) => {
+  try {
+    const mission = await Mission.findById(req.params.id);
+
+    if (!mission) {
+      return res.status(404).json({ message: 'Mission not found' });
+    }
+
+    if (mission.status !== 'pending_approval') {
+      return res.status(400).json({ message: 'Mission is not pending approval' });
+    }
+
+    mission.status = 'claimed'; // Revert back to claimed so they can resubmit
+    mission.completionProof = [];
+    mission.completionNotes = '';
+    
+    await mission.save();
+
+    const populatedMission = await Mission.findById(mission._id)
+      .populate('cat')
+      .populate('createdBy', 'name')
+      .populate('claimedBy', 'name avatar');
+
+    getIO().emit('mission_updated', populatedMission);
+
+    res.json(populatedMission);
+  } catch (error) {
+    res.status(500).json({ message: 'Error rejecting mission', error: error.message });
   }
 };

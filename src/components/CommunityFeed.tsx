@@ -449,12 +449,12 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
   ];
 
   return (
-    <section className="py-20 bg-[#FAF9F6] dark:bg-brand-dark min-h-screen relative overflow-hidden">
+    <section className="pt-6 pb-16 relative overflow-hidden bg-zinc-50 dark:bg-zinc-950 min-h-[calc(100vh-80px)]">
       {/* Subtle ambient decorative backgrounds */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-primary/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-brand-green/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 relative z-10">
         
         {/* Dynamic Navigation Indicator & Premium Header */}
         <div className="mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-zinc-200/50 dark:border-zinc-800/50">
@@ -483,13 +483,13 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
         </div>
 
         {/* Triple Grid Layout exactly like the design spec image */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* ================= COLUMN 1: Profile & Navigation Widgets (3/12 cols) ================= */}
           <div className="lg:col-span-3 space-y-6">
             
             {/* Profile widget card with high fidelity interactive sub-sections */}
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/80 dark:border-zinc-800 p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] text-center relative overflow-hidden transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800 text-center relative overflow-hidden">
               {/* Card top abstract graphic banner */}
               <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-brand-primary/15 to-amber-500/10 dark:from-brand-primary/20 dark:to-amber-500/15" />
               
@@ -635,61 +635,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
               </AnimatePresence>
             </div>
 
-            {/* Register a Colony Site Trigger Card (Awesome Interactive New Feature!) */}
-            <div className="bg-[#2D221C] dark:bg-[#1E1B18] text-white rounded-3xl p-6 shadow-md relative overflow-hidden group border border-zinc-800/10">
-              {/* Abstract mesh lights */}
-              <div className="absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-brand-primary/25 filter blur-2xl group-hover:scale-125 transition-transform duration-500" />
-              <div className="absolute top-0 right-0 h-24 w-24 rounded-full bg-amber-500/10 filter blur-xl" />
 
-              <div className="space-y-4 relative z-10">
-                <div className="h-10 w-10 rounded-2xl bg-white/10 flex items-center justify-center border border-white/25">
-                  <MapPin className="h-5 w-5 text-brand-primary" />
-                </div>
-                <div>
-                  <h4 className="font-heading font-black text-base text-white tracking-tight">Register Feeding Site</h4>
-                  <p className="text-xs text-white/70 leading-relaxed mt-1">
-                    Found a feral colony? Help map out food requirements, register a site and earn +50 XP!
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowRegisterColony(true)}
-                  className="w-full rounded-2xl bg-white text-brand-dark py-2.5 text-xs font-black hover:bg-brand-primary hover:text-white transition-all duration-300 flex items-center justify-center gap-1.5 shadow-sm uppercase tracking-wider"
-                >
-                  <Plus className="h-4 w-4" /> Register Site
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Links menu list widget */}
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/80 dark:border-zinc-800 p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] space-y-4">
-              <h3 className="font-heading text-xs font-black text-brand-dark dark:text-brand-light uppercase tracking-wider flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-brand-primary" />
-                Quick Links
-              </h3>
-              
-              <div className="space-y-1 text-xs">
-                {[
-                  { label: 'Donation History', icon: BookOpen, count: '3 Gifts' },
-                  { label: 'Saved Cats', icon: Heart, count: '14 Cats' },
-                  { label: 'Local Shelters', icon: Home, count: '8 Sites' },
-                  { label: 'Adoption Events', icon: Calendar, count: 'Sat 2PM' }
-                ].map((link, i) => (
-                  <button 
-                    key={i}
-                    onClick={() => alert(`Navigating to ${link.label}...`)}
-                    className="w-full flex items-center justify-between py-2.5 px-3 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-brand-muted dark:text-brand-light/80 hover:text-brand-primary transition-all duration-200 text-left group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <link.icon className="h-4.5 w-4.5 shrink-0 text-brand-muted dark:text-brand-light/50 group-hover:text-brand-primary transition-colors" />
-                      <span className="font-bold text-zinc-700 dark:text-brand-light/80 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">{link.label}</span>
-                    </div>
-                    <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-2.5 py-0.5 rounded-full font-extrabold group-hover:bg-brand-primary/10 group-hover:text-brand-primary transition-colors">
-                      {link.count}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
 
           </div>
 
@@ -697,7 +643,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
           <div className="lg:col-span-6 space-y-6">
             
             {/* Create Rescue Update Box Widget */}
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/80 dark:border-zinc-800 p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] space-y-5">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800 space-y-5">
               <form onSubmit={handleCreatePost} className="space-y-4">
                 <div className="flex items-start gap-4">
                   <div className="h-11 w-11 rounded-full overflow-hidden border-2 border-brand-primary/20 shrink-0 shadow-inner bg-zinc-100">
@@ -818,7 +764,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/80 dark:border-zinc-800 p-10 text-center text-xs text-brand-muted"
+                    className="bg-white dark:bg-zinc-900 rounded-xl p-10 shadow-sm border border-zinc-200/60 dark:border-zinc-800 text-center text-xs text-brand-muted"
                   >
                     No community updates match this category yet. Be the first to post one!
                   </motion.div>
@@ -831,7 +777,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.3 }}
-                      className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/80 dark:border-zinc-800 p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] space-y-5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300"
+                      className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800 space-y-5"
                     >
                       {/* Header: Author info, title */}
                       <div className="flex items-center justify-between">
@@ -859,7 +805,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
                         </div>
 
                         {/* Three dot menu button */}
-                        <button className="text-zinc-400 hover:text-brand-dark dark:hover:text-white p-1 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                        <button className="text-zinc-400 hover:text-brand-dark dark:hover:text-zinc-800 dark:text-white p-1 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-50 dark:bg-zinc-800 transition-colors">
                           <ChevronRight className="h-4.5 w-4.5 rotate-90" />
                         </button>
                       </div>
@@ -986,7 +932,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
                               navigator.clipboard.writeText(window.location.href);
                               alert('Link copied to clipboard!');
                             }}
-                            className="flex items-center justify-center p-1.5 rounded-lg text-zinc-400 hover:text-brand-primary hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                            className="flex items-center justify-center p-1.5 rounded-lg text-zinc-400 hover:text-brand-primary hover:bg-zinc-50 dark:hover:bg-zinc-50 dark:bg-zinc-800 transition-colors"
                           >
                             <Share2 className="h-4 w-4" />
                           </button>
@@ -1098,7 +1044,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
           <div className="lg:col-span-3 space-y-6">
             
             {/* Top Guardians Widget List exactly matches layout mockup */}
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/80 dark:border-zinc-800 p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] space-y-4">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-heading text-xs font-black text-brand-dark dark:text-brand-light uppercase tracking-wider flex items-center gap-2">
                   <Award className="h-4.5 w-4.5 text-amber-500" />
@@ -1152,34 +1098,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
               </button>
             </div>
 
-            {/* Simulated Live Rescue Mission Updates Feed */}
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/80 dark:border-zinc-800 p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] space-y-4">
-              <h3 className="font-heading text-xs font-black text-brand-dark dark:text-brand-light uppercase tracking-wider flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-brand-primary" />
-                Live Mission Ticker
-              </h3>
 
-              <div className="space-y-4 text-xs text-brand-muted dark:text-brand-light/75">
-                {[
-                  { text: 'Feeding station restocked at Sector 4', time: '12m ago', active: true },
-                  { text: 'Fostered kitten clearance at West Side Rescue', time: '45m ago', active: false },
-                  { text: 'Stray reported check verified near High School', time: '1h ago', active: false }
-                ].map((item, idx) => (
-                  <div key={idx} className="flex gap-3 items-start py-0.5">
-                    <span className="relative flex h-2.5 w-2.5 mt-1 shrink-0">
-                      {item.active && (
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-primary opacity-75"></span>
-                      )}
-                      <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${item.active ? 'bg-brand-primary' : 'bg-zinc-200 dark:bg-zinc-800'}`}></span>
-                    </span>
-                    <div className="flex-1 space-y-0.5">
-                      <p className="font-bold text-[11px] leading-relaxed text-zinc-700 dark:text-zinc-300">{item.text}</p>
-                      <span className="text-[9px] text-zinc-400 font-medium">{item.time}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
 
           </div>
 
@@ -1214,7 +1133,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
                 </h3>
                 <button
                   onClick={() => setShowRegisterColony(false)}
-                  className="text-zinc-400 hover:text-brand-dark dark:hover:text-white font-black text-base transition-colors h-7 w-7 rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center justify-center"
+                  className="text-zinc-400 hover:text-brand-dark dark:hover:text-zinc-800 dark:text-white font-black text-base transition-colors h-7 w-7 rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center"
                 >
                   ✕
                 </button>
@@ -1317,7 +1236,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
                 </h3>
                 <button
                   onClick={() => setShowLeaderboard(false)}
-                  className="text-zinc-400 hover:text-brand-dark dark:hover:text-white font-black text-base transition-colors h-7 w-7 rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center justify-center"
+                  className="text-zinc-400 hover:text-brand-dark dark:hover:text-zinc-800 dark:text-white font-black text-base transition-colors h-7 w-7 rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center"
                 >
                   ✕
                 </button>
@@ -1375,7 +1294,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
 
               <button
                 onClick={() => setShowLeaderboard(false)}
-                className="w-full mt-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 py-2.5 text-xs font-black text-brand-muted hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-center uppercase tracking-wider"
+                className="w-full mt-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 py-2.5 text-xs font-black text-brand-muted hover:bg-zinc-50 dark:hover:bg-zinc-50 dark:bg-zinc-800 transition-colors text-center uppercase tracking-wider"
               >
                 Close Leaderboard
               </button>

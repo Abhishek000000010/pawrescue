@@ -18,7 +18,7 @@ const missionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['open', 'claimed', 'in_progress', 'completed', 'cancelled'],
+    enum: ['open', 'claimed', 'in_progress', 'pending_approval', 'completed', 'cancelled'],
     default: 'open',
   },
   claimedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

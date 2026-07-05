@@ -18,10 +18,13 @@ interface HomeProps {
   onReportClick: () => void;
   onAdoptClick: () => void;
   onVolunteerClick: () => void;
+  onJoinClick: () => void;
+  onMapClick: () => void;
+  onMissionsClick: () => void;
   currentView: 'home' | 'community' | 'report' | 'adopt' | 'map' | 'missions';
 }
 
-const Home: React.FC<HomeProps> = ({ onReportClick, onAdoptClick, onVolunteerClick, currentView }) => {
+const Home: React.FC<HomeProps> = ({ onReportClick, onAdoptClick, onVolunteerClick, onJoinClick, onMapClick, onMissionsClick, currentView }) => {
   if (currentView === 'map') {
     return <RescueCommandCenter />;
   }
@@ -38,26 +41,25 @@ const Home: React.FC<HomeProps> = ({ onReportClick, onAdoptClick, onVolunteerCli
     return <ReportPage onReportSuccess={() => {}} onNavigateHome={() => {}} />;
   }
 
+  if (currentView === 'missions') {
+    return <Missions />;
+  }
+
   return (
-    <div className="flex flex-col w-full overflow-hidden">
+    <div className="flex flex-col w-full overflow-hidden bg-brand-light dark:bg-brand-dark transition-colors duration-500">
       <Hero 
         onReportClick={onReportClick} 
         onAdoptClick={onAdoptClick} 
         onVolunteerClick={onVolunteerClick} 
       />
-      <Stats />
-      <HowItWorks />
-      <div id="missions">
-        <Missions />
-      </div>
       <FeatureBento 
-        onMapClick={() => {}}
+        onMapClick={onMapClick}
+        onMissionsClick={onMissionsClick}
         onAdoptClick={onAdoptClick}
         onVolunteerClick={onVolunteerClick}
       />
-      <Guardians />
-      <BeforeAfterStories />
-      <CTA onJoinClick={onVolunteerClick} onHelpClick={onVolunteerClick} />
+      <HowItWorks />
+      <CTA onJoinClick={onJoinClick} onHelpClick={onVolunteerClick} />
     </div>
   );
 };

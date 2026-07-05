@@ -97,7 +97,7 @@ export default function UrgentMissions({ onExploreClick }: UrgentMissionsProps) 
                   </div>
 
                   {/* Distance badge bottom left */}
-                  <div className="absolute bottom-4 left-4 flex items-center gap-1 text-white text-xs font-semibold">
+                  <div className="absolute bottom-4 left-4 flex items-center gap-1 text-zinc-800 dark:text-white text-xs font-semibold">
                     <Navigation className="h-3.5 w-3.5 rotate-45 fill-white/10" />
                     <span>{mission.distance}</span>
                   </div>

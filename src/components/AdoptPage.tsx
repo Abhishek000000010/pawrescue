@@ -13,6 +13,7 @@ export default function AdoptPage() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [inquirySubmitted, setInquirySubmitted] = useState(false);
+  const [myInquiries, setMyInquiries] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchCats = async () => {
@@ -41,7 +42,23 @@ export default function AdoptPage() {
         setLoading(false);
       }
     };
+
+    const fetchMyInquiries = async () => {
+      const token = localStorage.getItem('pawnet_token');
+      if (token) {
+        try {
+          const res = await fetch('/api/adoptions/my-inquiries', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            setMyInquiries(await res.json());
+          }
+        } catch (err) {}
+      }
+    };
+
     fetchCats();
+    fetchMyInquiries();
   }, []);
 
   // Inquiry Form state
@@ -97,10 +114,41 @@ export default function AdoptPage() {
     }
   }, [categoryFilter, filteredCats, selectedCat]);
 
-  const handleInquirySubmit = (e: React.FormEvent) => {
+  const handleInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userName || !userEmail) return;
-    setInquirySubmitted(true);
+    if (!userName || !userEmail || !selectedCat) return;
+    
+    try {
+      const res = await fetch('/api/adoptions/inquire', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(localStorage.getItem('pawnet_token') ? { 'Authorization': `Bearer ${localStorage.getItem('pawnet_token')}` } : {})
+        },
+        body: JSON.stringify({
+          catId: selectedCat.id,
+          adopterName: userName,
+          adopterEmail: userEmail,
+          adopterPhone: userPhone,
+          experienceLevel: userExperience,
+          message: userMessage
+        })
+      });
+
+      if (res.ok) {
+        setInquirySubmitted(true);
+        setMyInquiries(prev => {
+          // If overriding, it's fine to just push again for UI purposes
+          return [...prev, { catId: { _id: selectedCat.id } }];
+        });
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.message}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error. Please try again later.');
+    }
   };
 
   const handleResetInquiry = () => {
@@ -114,20 +162,20 @@ export default function AdoptPage() {
   };
 
   return (
-    <div id="adopt-view-container" className="bg-[#FAF9F6] dark:bg-zinc-950 min-h-screen pt-24 pb-16 transition-colors duration-300">
+    <div id="adopt-view-container" className="bg-[#FAF9F6] dark:bg-zinc-950 min-h-screen pb-16 transition-colors duration-300">
       
       {/* ================= HERO TEXT BLOCK BANNER ================= */}
-      <section className="relative overflow-hidden py-16 px-6 max-w-7xl mx-auto rounded-3xl mb-8 bg-gradient-to-br from-zinc-100 via-white to-zinc-50 dark:from-zinc-900/60 dark:via-zinc-900 dark:to-zinc-950/80 border border-zinc-200/50 dark:border-zinc-800/40">
+      <section className="relative overflow-hidden pt-28 pb-8 px-8 w-full bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
         <div className="absolute right-0 top-0 w-1/2 h-full opacity-10 dark:opacity-5 pointer-events-none bg-[url('https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=800')] bg-cover bg-center" />
-        <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-1 bg-[#FDF2EC] dark:bg-brand-primary/10 text-brand-primary dark:text-brand-primary-hover px-3 py-1 rounded-full text-xs font-extrabold tracking-wider uppercase">
+        <div className="relative z-10 max-w-7xl mx-auto space-y-4">
+          <div className="inline-flex items-center gap-1 bg-[#FDF2EC] dark:bg-brand-primary/10 text-brand-primary dark:text-brand-primary-hover px-3 py-1 text-xs font-extrabold tracking-wider uppercase">
             Adoption Portal
           </div>
           <h1 className="font-heading text-4xl sm:text-5xl font-black text-zinc-900 dark:text-zinc-50 leading-tight">
             Find Your <br />
             <span className="text-brand-primary">Purr-fect Companion.</span>
           </h1>
-          <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-300 leading-relaxed font-medium">
+          <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-300 leading-relaxed font-medium max-w-2xl">
             Browse our rescue gallery and find a furry friend ready for their forever home. 
             Every adoption saves a life, gives a second chance, and opens a cage for another animal in need.
           </p>
@@ -135,8 +183,8 @@ export default function AdoptPage() {
       </section>
 
       {/* ================= CONTROLS & FILTERING ROW ================= */}
-      <div className="max-w-7xl mx-auto px-6 mb-8">
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/50 dark:border-zinc-800/40 p-5 md:p-6 shadow-sm flex flex-col gap-5">
+      <div className="w-full bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 mb-8 px-6 md:px-8 py-4">
+        <div className="max-w-7xl mx-auto flex flex-col gap-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             
             {/* Search Input */}
@@ -147,17 +195,17 @@ export default function AdoptPage() {
                 placeholder="Search by name, breed, or location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 pl-10 pr-4 py-3 text-xs text-zinc-800 dark:text-zinc-100 focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/20 transition-all font-semibold"
+                className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-10 pr-4 py-3 text-xs text-zinc-800 dark:text-zinc-100 focus:border-brand-primary focus:outline-none transition-all font-semibold"
               />
             </div>
 
             {/* Stray Cat Rescue | Rehoming Toggle */}
-            <div className="flex items-center bg-zinc-100/80 dark:bg-zinc-900/80 p-1 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/40 select-none self-start md:self-auto shrink-0">
+            <div className="flex items-center bg-zinc-100 dark:bg-zinc-950 p-1 border border-zinc-200 dark:border-zinc-800 select-none self-start md:self-auto shrink-0">
               <button
                 onClick={() => setCategoryFilter('stray')}
-                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                   categoryFilter === 'stray'
-                    ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/15'
+                    ? 'bg-brand-primary text-zinc-800 dark:text-white'
                     : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
                 }`}
               >
@@ -165,9 +213,9 @@ export default function AdoptPage() {
               </button>
               <button
                 onClick={() => setCategoryFilter('rehoming')}
-                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                   categoryFilter === 'rehoming'
-                    ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/15'
+                    ? 'bg-brand-primary text-zinc-800 dark:text-white'
                     : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
                 }`}
               >
@@ -177,11 +225,11 @@ export default function AdoptPage() {
           </div>
 
           {/* Tags list */}
-          <div className="flex flex-wrap items-center gap-2 border-t border-zinc-100 dark:border-zinc-800/60 pt-4">
+          <div className="flex flex-wrap items-center gap-2 pt-2">
             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mr-2">Filter tags:</span>
             <button
               onClick={() => setSelectedTag(null)}
-              className={`px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
                 !selectedTag
                   ? 'bg-brand-primary/10 border-brand-primary/20 text-brand-primary'
                   : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
@@ -193,7 +241,7 @@ export default function AdoptPage() {
               <button
                 key={tag}
                 onClick={() => setSelectedTag(tag)}
-                className={`px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
                   selectedTag === tag
                     ? 'bg-brand-primary/10 border-brand-primary/20 text-brand-primary'
                     : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
@@ -223,8 +271,8 @@ export default function AdoptPage() {
                 <p>Loading available cats...</p>
               </div>
             ) : filteredCats.length === 0 ? (
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/50 dark:border-zinc-800/40 p-16 text-center shadow-sm">
-                <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto text-zinc-400 mb-3">
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-16 text-center">
+                <div className="h-12 w-12 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto text-zinc-400 mb-3">
                   <HeartOff className="h-5 w-5" />
                 </div>
                 <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">No cats match your filters</p>
@@ -239,7 +287,7 @@ export default function AdoptPage() {
                 </button>
               </div>
             ) : (
-              <div className={`grid gap-6 transition-all duration-500 ${
+              <div className={`grid gap-5 transition-all duration-500 ${
                 selectedCat 
                   ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2' 
                   : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
@@ -249,10 +297,10 @@ export default function AdoptPage() {
                     key={cat.id}
                     layoutId={`adopt-card-${cat.id}`}
                     onClick={() => setSelectedCat(cat)}
-                    className={`group cursor-pointer overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 border transition-all hover:shadow-md flex flex-col ${
+                    className={`group cursor-pointer overflow-hidden rounded-xl bg-white dark:bg-zinc-900 border transition-all flex flex-col hover:shadow-md ${
                       selectedCat?.id === cat.id
-                        ? 'border-brand-primary ring-2 ring-brand-primary/15 shadow-sm'
-                        : 'border-zinc-200/80 dark:border-zinc-800/60 hover:border-zinc-300 dark:hover:border-zinc-700'
+                        ? 'border-brand-primary ring-2 ring-brand-primary/20 z-10'
+                        : 'border-zinc-200 dark:border-zinc-800 hover:border-brand-primary/50'
                     }`}
                   >
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-50 dark:bg-zinc-950">
@@ -264,7 +312,7 @@ export default function AdoptPage() {
                       />
                       <button
                         onClick={(e) => toggleFavorite(cat.id, e)}
-                        className="absolute right-3 top-3 rounded-full bg-white/90 dark:bg-zinc-900/90 p-1.5 shadow backdrop-blur-sm text-brand-primary hover:bg-white dark:hover:bg-zinc-850 hover:scale-105 transition-all cursor-pointer z-10"
+                        className="absolute right-3 top-3 bg-white/90 dark:bg-zinc-900/90 p-1.5 backdrop-blur-sm text-brand-primary hover:bg-white dark:hover:bg-zinc-850 hover:scale-105 transition-all cursor-pointer z-10 border border-zinc-200 dark:border-zinc-700"
                       >
                         <Heart
                           className={`h-4 w-4 ${
@@ -273,7 +321,7 @@ export default function AdoptPage() {
                         />
                       </button>
                       {cat.status === 'Urgent' && (
-                        <span className="absolute left-3 top-3 rounded-md bg-red-500 px-2 py-0.5 text-[9px] font-black text-white uppercase tracking-wider">
+                        <span className="absolute left-3 top-3 bg-red-500 px-2 py-0.5 text-[9px] font-black text-white uppercase tracking-wider">
                           Urgent
                         </span>
                       )}
@@ -292,7 +340,7 @@ export default function AdoptPage() {
                         {cat.tags.slice(0, 2).map((tag) => (
                           <span
                             key={tag}
-                            className="rounded-md bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[9px] font-black uppercase text-zinc-500 dark:text-zinc-400 tracking-wider"
+                            className="bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[9px] font-black uppercase text-zinc-500 dark:text-zinc-400 tracking-wider"
                           >
                             {tag}
                           </span>
@@ -306,11 +354,11 @@ export default function AdoptPage() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="mt-8 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/50 dark:border-zinc-800/40 py-4 px-6 flex items-center justify-center gap-2 shadow-sm select-none">
+              <div className="mt-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 py-4 px-6 flex items-center justify-center gap-2 shadow-sm select-none">
                 <button
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:hover:bg-transparent text-zinc-500 dark:text-zinc-400 transition-colors cursor-pointer"
+                  className="p-1.5 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:hover:bg-transparent text-zinc-500 dark:text-zinc-400 transition-colors cursor-pointer"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -319,10 +367,10 @@ export default function AdoptPage() {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`w-8 h-8 text-xs font-bold transition-all cursor-pointer ${
                       currentPage === page
-                        ? 'bg-brand-primary text-white shadow-md'
-                        : 'border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-300'
+                        ? 'bg-brand-primary text-zinc-800 dark:text-white shadow-md'
+                        : 'border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
                     }`}
                   >
                     {page}
@@ -332,7 +380,7 @@ export default function AdoptPage() {
                 <button
                   disabled={currentPage === totalPages}
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:hover:bg-transparent text-zinc-500 dark:text-zinc-400 transition-colors cursor-pointer"
+                  className="p-1.5 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:hover:bg-transparent text-zinc-500 dark:text-zinc-400 transition-colors cursor-pointer"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -348,14 +396,14 @@ export default function AdoptPage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ type: 'spring', damping: 28, stiffness: 150 }}
-                className="w-full md:w-[42%] lg:w-[38%] bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/50 dark:border-zinc-800/40 shadow-md overflow-hidden shrink-0 self-start sticky top-24"
+                className="w-full md:w-[42%] lg:w-[38%] bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-lg overflow-hidden shrink-0 self-start sticky top-24"
               >
                 <div className="w-full flex flex-col relative">
                   
                   {/* Deselect Cat Button */}
                   <button
                     onClick={() => setSelectedCat(null)}
-                    className="absolute right-4 top-4 z-10 rounded-full p-2 bg-black/40 hover:bg-black/60 text-white transition-all backdrop-blur-xs cursor-pointer"
+                    className="absolute right-4 top-4 z-10 p-2 bg-black/40 hover:bg-black/60 text-white transition-all backdrop-blur-xs cursor-pointer border border-zinc-600"
                     aria-label="Back to gallery"
                   >
                     <X className="h-4 w-4" />
@@ -365,14 +413,14 @@ export default function AdoptPage() {
                   <div className="relative aspect-video w-full bg-zinc-50 dark:bg-zinc-950 shrink-0">
                     <img src={selectedCat.image} alt={selectedCat.name} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <div className="absolute bottom-4 left-4 right-4 text-zinc-800 dark:text-white">
                       <div className="flex items-center gap-2">
                         <h3 className="font-heading text-xl font-extrabold tracking-tight">{selectedCat.name}</h3>
-                        <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider backdrop-blur-md">
+                        <span className="bg-white/20 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider backdrop-blur-md">
                           {selectedCat.gender}
                         </span>
                       </div>
-                      <p className="text-xs text-white/85 mt-1 font-medium">{selectedCat.breed} • {selectedCat.age}</p>
+                      <p className="text-xs text-zinc-800 dark:text-white/85 mt-1 font-medium">{selectedCat.breed} • {selectedCat.age}</p>
                     </div>
                   </div>
 
@@ -383,7 +431,7 @@ export default function AdoptPage() {
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">{selectedCat.description}</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 border-y border-zinc-100 dark:border-zinc-800 py-4 bg-zinc-50/50 dark:bg-zinc-950/20 rounded-2xl px-4">
+                    <div className="grid grid-cols-2 gap-4 border-y border-zinc-100 dark:border-zinc-800 py-4 bg-zinc-50 dark:bg-zinc-950 px-4">
                       <div>
                         <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Shelter Location</span>
                         <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mt-1">{selectedCat.location}</p>
@@ -400,6 +448,12 @@ export default function AdoptPage() {
                         <h4 className="font-heading text-sm font-black text-zinc-800 dark:text-zinc-100">Send Adoption Inquiry</h4>
                         <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 leading-normal">Start your matching journey. It is completely non-binding!</p>
                       </div>
+
+                      {myInquiries.some(inq => inq.catId?._id === selectedCat.id) && !inquirySubmitted && (
+                        <div className="rounded-xl border border-brand-primary/30 bg-brand-primary/5 p-3 text-xs text-brand-primary font-medium">
+                          <strong>Note:</strong> You have already submitted an application for {selectedCat.name}. Submitting this form again will override your previous application.
+                        </div>
+                      )}
 
                       {inquirySubmitted ? (
                         <motion.div

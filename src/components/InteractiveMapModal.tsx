@@ -402,7 +402,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.98, opacity: 0, y: 10 }}
             transition={{ type: 'spring', duration: 0.4 }}
-            className="relative w-full max-w-7xl h-full md:h-[90vh] overflow-hidden rounded-none md:rounded-[24px] bg-zinc-900 border border-zinc-800 text-zinc-100 flex flex-col shadow-2xl"
+            className="relative w-full max-w-7xl h-full md:h-[90vh] overflow-hidden rounded-none md:rounded-[24px] bg-white dark:bg-zinc-900 border border-zinc-800 text-zinc-100 flex flex-col shadow-2xl"
           >
             {/* ================= COMMAND CENTER SYSTEM HEADER ================= */}
             <div className="px-6 py-4 bg-zinc-950/80 border-b border-zinc-800 flex items-center justify-between shrink-0">
@@ -414,7 +414,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-mono text-xs uppercase tracking-widest text-emerald-400 font-extrabold">LIVE DISPATCH COMMAND PORTAL</h3>
-                    <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[9px] font-bold bg-zinc-800 text-zinc-400 tracking-wider font-mono">SECTOR_GPS_ON</span>
+                    <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[9px] font-bold bg-zinc-50 dark:bg-zinc-800 text-zinc-400 tracking-wider font-mono">SECTOR_GPS_ON</span>
                   </div>
                   <p className="text-[11px] text-zinc-400 font-medium font-sans mt-0.5">Real-time stray tracking, rescue operations, and automated feeder network.</p>
                 </div>
@@ -433,13 +433,13 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                     addLog('System state factory reset executed.', 'system');
                   }}
                   title="Reset Simulation Data"
-                  className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors"
+                  className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-800 dark:text-white hover:bg-zinc-700 transition-colors"
                 >
                   <RotateCcw className="h-4 w-4" />
                 </button>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg bg-zinc-800 hover:bg-red-500 hover:text-white text-zinc-400 transition-colors cursor-pointer"
+                  className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 hover:bg-red-500 hover:text-zinc-800 dark:text-white text-zinc-400 transition-colors cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -505,7 +505,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                             onClick={() => selectItem(colony.id, 'colony')}
                             className={`p-4 rounded-xl border transition-all cursor-pointer ${
                               isFocused
-                                ? 'bg-zinc-900 border-emerald-500/50 shadow-md shadow-emerald-950/20'
+                                ? 'bg-white dark:bg-zinc-900 border-emerald-500/50 shadow-md shadow-emerald-950/20'
                                 : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/60'
                             }`}
                           >
@@ -539,7 +539,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                                     {colony.foodLevel}%
                                   </span>
                                 </div>
-                                <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                                <div className="h-1.5 w-full bg-zinc-50 dark:bg-zinc-800 rounded-full overflow-hidden">
                                   <div 
                                     className={`h-full transition-all duration-1000 ${
                                       colony.foodLevel < 20 ? 'bg-red-500' : colony.foodLevel < 50 ? 'bg-amber-500' : 'bg-emerald-500'
@@ -556,7 +556,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                                     {colony.waterLevel}%
                                   </span>
                                 </div>
-                                <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                                <div className="h-1.5 w-full bg-zinc-50 dark:bg-zinc-800 rounded-full overflow-hidden">
                                   <div 
                                     className={`h-full transition-all duration-1000 ${
                                       colony.waterLevel < 20 ? 'bg-red-500' : colony.waterLevel < 50 ? 'bg-amber-500' : 'bg-emerald-500'
@@ -598,7 +598,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                             onClick={() => selectItem(mission.id, 'mission')}
                             className={`p-4 rounded-xl border transition-all cursor-pointer ${
                               isFocused
-                                ? 'bg-zinc-900 border-amber-500/50 shadow-md shadow-amber-950/20'
+                                ? 'bg-white dark:bg-zinc-900 border-amber-500/50 shadow-md shadow-amber-950/20'
                                 : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/60'
                             }`}
                           >
@@ -611,7 +611,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                                   ? 'bg-red-500/15 border border-red-900 text-red-400'
                                   : mission.urgency === 'Medium'
                                   ? 'bg-amber-500/15 border border-amber-900 text-amber-400'
-                                  : 'bg-zinc-800 border border-zinc-700 text-zinc-400'
+                                  : 'bg-zinc-50 dark:bg-zinc-800 border border-zinc-700 text-zinc-400'
                               }`}>
                                 {mission.urgency} Urgency
                               </span>
@@ -651,7 +651,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                                   </button>
                                 )}
                                 {mission.status === 'Completed' && (
-                                  <span className="flex-1 py-1 px-2 rounded bg-zinc-800 border border-zinc-700 text-zinc-400 text-center font-mono text-[10px]">
+                                  <span className="flex-1 py-1 px-2 rounded bg-zinc-50 dark:bg-zinc-800 border border-zinc-700 text-zinc-400 text-center font-mono text-[10px]">
                                     Mission Archived & Logged
                                   </span>
                                 )}
@@ -679,7 +679,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                             onClick={() => selectItem(report.id, 'report')}
                             className={`p-4 rounded-xl border transition-all cursor-pointer ${
                               isFocused
-                                ? 'bg-zinc-900 border-red-500/50 shadow-md shadow-red-950/20'
+                                ? 'bg-white dark:bg-zinc-900 border-red-500/50 shadow-md shadow-red-950/20'
                                 : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/60'
                             }`}
                           >
@@ -853,7 +853,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                           <div
                             className={`h-9 w-9 rounded-full flex items-center justify-center border-2 shadow-lg transition-all ${
                               isFocused
-                                ? 'bg-zinc-900 border-emerald-400 text-emerald-400 scale-110 ring-4 ring-emerald-500/20'
+                                ? 'bg-white dark:bg-zinc-900 border-emerald-400 text-emerald-400 scale-110 ring-4 ring-emerald-500/20'
                                 : 'bg-zinc-950 border-emerald-600 text-emerald-500 hover:border-emerald-400 hover:text-emerald-400'
                             }`}
                             style={{ filter: 'url(#emerald-glow)' }}
@@ -892,7 +892,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                           <div
                             className={`h-9 w-9 rounded-full flex items-center justify-center border-2 shadow-lg transition-all ${
                               isFocused
-                                ? 'bg-zinc-900 border-amber-400 text-amber-400 scale-110 ring-4 ring-amber-500/20'
+                                ? 'bg-white dark:bg-zinc-900 border-amber-400 text-amber-400 scale-110 ring-4 ring-amber-500/20'
                                 : 'bg-zinc-950 border-amber-600 text-amber-500 hover:border-amber-400 hover:text-amber-400'
                             }`}
                             style={{ filter: 'url(#amber-glow)' }}
@@ -928,7 +928,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                           <div
                             className={`h-9 w-9 rounded-full flex items-center justify-center border-2 shadow-lg transition-all ${
                               isFocused
-                                ? 'bg-zinc-900 border-red-400 text-red-400 scale-110 ring-4 ring-red-500/20'
+                                ? 'bg-white dark:bg-zinc-900 border-red-400 text-red-400 scale-110 ring-4 ring-red-500/20'
                                 : 'bg-zinc-950 border-red-600 text-red-500 hover:border-red-400 hover:text-red-400'
                             }`}
                             style={{ filter: 'url(#red-glow)' }}
@@ -955,7 +955,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                         <MapPin className="h-3 w-3 text-zinc-950 fill-zinc-950" /> [L: {clickCoord.lat.toFixed(0)}, {clickCoord.lng.toFixed(0)}]
                       </div>
                       <div className="w-2 h-2 bg-emerald-500 rotate-45 -mt-1" />
-                      <div className="h-4 w-4 rounded-full border-2 border-emerald-400 bg-zinc-900 shadow-md animate-bounce mt-1" />
+                      <div className="h-4 w-4 rounded-full border-2 border-emerald-400 bg-white dark:bg-zinc-900 shadow-md animate-bounce mt-1" />
                     </motion.div>
                   )}
 
@@ -970,7 +970,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                       initial={{ y: 50, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       exit={{ y: 50, opacity: 0 }}
-                      className="absolute bottom-4 left-4 right-4 z-40 bg-zinc-900/95 border border-zinc-800 rounded-2xl p-5 shadow-2xl backdrop-blur-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+                      className="absolute bottom-4 left-4 right-4 z-40 bg-white/95 dark:bg-zinc-900/95 border border-zinc-800 rounded-2xl p-5 shadow-2xl backdrop-blur-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
                     >
                       <div className="space-y-1.5 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -1036,7 +1036,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
 
                         <button
                           onClick={() => { setFocusedId(null); setFocusedType(null); }}
-                          className="flex-1 sm:flex-initial rounded-xl border border-zinc-800 px-4 py-2 text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer"
+                          className="flex-1 sm:flex-initial rounded-xl border border-zinc-800 px-4 py-2 text-xs font-bold text-zinc-400 hover:text-zinc-800 dark:text-white hover:bg-zinc-50 dark:bg-zinc-800 transition-all cursor-pointer"
                         >
                           Dismiss Locks
                         </button>
@@ -1050,7 +1050,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                       initial={{ y: 50, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       exit={{ y: 50, opacity: 0 }}
-                      className="absolute bottom-4 left-4 right-4 z-40 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-2xl max-w-lg mx-auto backdrop-blur-sm"
+                      className="absolute bottom-4 left-4 right-4 z-40 bg-white dark:bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-2xl max-w-lg mx-auto backdrop-blur-sm"
                     >
                       <form onSubmit={handleSubmitQuickReport} className="space-y-4">
                         <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
@@ -1090,7 +1090,7 @@ export default function InteractiveMapModal({ isOpen, onClose, onReportTrigger }
                           <button
                             type="button"
                             onClick={() => { setShowQuickForm(false); setClickCoord(null); }}
-                            className="px-4 py-2 border border-zinc-800 rounded-xl text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                            className="px-4 py-2 border border-zinc-800 rounded-xl text-xs font-bold text-zinc-400 hover:text-zinc-800 dark:text-white hover:bg-zinc-50 dark:bg-zinc-800 transition-colors cursor-pointer"
                           >
                             Cancel
                           </button>

@@ -8,6 +8,9 @@ import catRoutes from './routes/catRoutes.js';
 import missionRoutes from './routes/missionRoutes.js';
 import communityRoutes from './routes/communityRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import adoptionRoutes from './routes/adoptionRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 import { initSocket } from './services/socketService.js';
 
@@ -27,6 +30,9 @@ app.use('/api/cats', catRoutes);
 app.use('/api/missions', missionRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/adoptions', adoptionRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 app.get('/', (req, res) => {
