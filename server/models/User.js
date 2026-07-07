@@ -22,6 +22,18 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: String,
     },
+    gender: {
+      type: String,
+    },
+    address: {
+      type: String,
+    },
+    dob: {
+      type: String,
+    },
+    postalCode: {
+      type: String,
+    },
     role: {
       type: String,
       enum: ['citizen', 'volunteer', 'foster', 'vet', 'admin'],

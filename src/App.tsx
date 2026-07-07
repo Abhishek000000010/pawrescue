@@ -70,6 +70,14 @@ function AppContent() {
     }
   }, [darkMode]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const view = params.get('view');
+    if (view && ['home', 'community', 'report', 'adopt', 'map', 'missions'].includes(view)) {
+      setCurrentView(view as any);
+    }
+  }, [location.search]);
+
   // "Become a Guardian" — active volunteering. Requires an account, then opens
   // the volunteer onboarding form (roles, location, code of conduct).
   const handleVolunteerClick = () => {

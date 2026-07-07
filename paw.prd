@@ -1,4 +1,4 @@
-# PawNet India — Product Requirements Document
+# PawNet - Product Requirements Document
 **Version:** 1.0  
 **Hackathon:** HackTheKitty (7-Day Build)  
 **Stack:** MERN (MongoDB, Express, React, Node.js)  
@@ -8,8 +8,8 @@
 
 ## 1. Project Overview
 
-### What is PawNet India?
-PawNet India is a centralized stray cat welfare platform for India. It connects citizens who spot stray cats in distress with volunteers, rescuers, fosters, vets, and donors — creating a complete end-to-end rescue ecosystem. Think of it as "Zomato for cat rescue" — hyper-local, real-time, and community-driven.
+### What is PawNet ?
+PawNet is a centralized stray cat welfare platform for India. It connects citizens who spot stray cats in distress with volunteers, rescuers, fosters, vets, and donors — creating a complete end-to-end rescue ecosystem. Think of it as "Zomato for cat rescue" — hyper-local, real-time, and community-driven.
 
 ### Core Philosophy
 - **Report it. Track it. Rescue it.** Every cat reported gets a public rescue thread visible to the community.

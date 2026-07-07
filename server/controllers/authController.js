@@ -40,6 +40,7 @@ export const registerUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
         token: generateToken(user._id),
       });
     } else {
@@ -65,6 +66,7 @@ export const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
         token: generateToken(user._id),
       });
     } else {
@@ -288,6 +290,118 @@ export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({}).select('-password').sort({ createdAt: -1 });
     res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/auth/me
+// @access  Private
+export const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { firstName, lastName, gender, address, phone, dob, location, postalCode } = req.body;
+
+    if (phone) {
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({ message: 'Please enter a valid 10-digit phone number.' });
+      }
+    }
+
+    if (postalCode) {
+      const postalRegex = /^[a-zA-Z0-9]{5,10}$/;
+      if (!postalRegex.test(postalCode)) {
+        return res.status(400).json({ message: 'Please enter a valid postal code (5 to 10 alphanumeric characters).' });
+      }
+    }
+
+    if (dob) {
+      const selectedDate = new Date(dob);
+      if (isNaN(selectedDate.getTime()) || selectedDate > new Date()) {
+        return res.status(400).json({ message: 'Invalid date of birth' });
+      }
+    }
+
+    if (firstName !== undefined || lastName !== undefined) {
+      const fName = firstName !== undefined ? firstName : (user.name.split(' ')[0] || '');
+      const lName = lastName !== undefined ? lastName : (user.name.split(' ').slice(1).join(' ') || '');
+      user.name = `${fName} ${lName}`.trim();
+    }
+    if (gender !== undefined) user.gender = gender;
+    if (address !== undefined) user.address = address;
+    if (phone !== undefined) user.phone = phone;
+    if (dob !== undefined) user.dob = dob;
+    if (location !== undefined) {
+      user.set('location.city', location);
+    }
+    if (postalCode !== undefined) user.postalCode = postalCode;
+
+    await user.save();
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      gender: user.gender,
+      address: user.address,
+      phone: user.phone,
+      dob: user.dob,
+      location: user.location,
+      postalCode: user.postalCode,
+      avatar: user.avatar,
+      points: user.points,
+      badges: user.badges,
+      missionsCompleted: user.missionsCompleted,
+      catsRescued: user.catsRescued,
+      createdAt: user.createdAt,
+      donations: user.donations,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update password
+// @route   PUT /api/auth/me/password
+// @access  Private
+export const updatePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Please enter current and new passwords.' });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Verify current password
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Incorrect current password.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters.' });
+    }
+
+    // Set new password (the pre-save hook will automatically hash it)
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

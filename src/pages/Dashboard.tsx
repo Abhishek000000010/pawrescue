@@ -15,6 +15,19 @@ interface UserProfile {
   createdAt: string;
   role: string;
   avatar?: string;
+  phone?: string;
+  gender?: string;
+  address?: string;
+  dob?: string;
+  location?: {
+    city?: string;
+    state?: string;
+    coordinates?: {
+      lat?: number;
+      lng?: number;
+    };
+  };
+  postalCode?: string;
   donations?: {
     _id: string;
     amount: number;
@@ -63,13 +76,18 @@ export default function Dashboard() {
     lastName: '',
     gender: 'Male',
     email: '',
-    address: '3605 Parker Rd.',
-    phone: '(405) 555-0128',
-    dob: '1 Feb, 1995',
-    location: 'Atlanta, USA',
-    postalCode: '30301'
+    address: '',
+    phoneCountryCode: '+91',
+    phone: '',
+    dob: '',
+    location: '',
+    postalCode: ''
   });
   const [loading, setLoading] = useState(true);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [updatingPassword, setUpdatingPassword] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -86,15 +104,33 @@ export default function Dashboard() {
         const profileRes = await fetch('/api/auth/me', {
           headers: { Authorization: `Bearer ${token}` }
         });
+        const parsePhone = (phoneStr: string | undefined) => {
+          if (!phoneStr) return { countryCode: '+91', number: '' };
+          const digitsOnly = phoneStr.replace(/\D/g, '');
+          if (digitsOnly.length > 10) {
+            const number = digitsOnly.slice(-10);
+            const prefixDigits = digitsOnly.slice(0, -10);
+            return { countryCode: `+${prefixDigits}`, number };
+          }
+          return { countryCode: '+91', number: digitsOnly };
+        };
+
         if (profileRes.ok) {
           profileData = await profileRes.json();
           setProfile(profileData);
+          const parsed = parsePhone(profileData.phone);
           setFormState(prev => ({
             ...prev,
             firstName: profileData.name.split(' ')[0] || '',
             lastName: profileData.name.split(' ').slice(1).join(' ') || '',
             email: profileData.email,
-            phone: profileData.phone || '(405) 555-0128',
+            phoneCountryCode: parsed.countryCode,
+            phone: parsed.number,
+            gender: profileData.gender || 'Male',
+            address: profileData.address || '',
+            dob: profileData.dob || '',
+            location: profileData.location?.city || '',
+            postalCode: profileData.postalCode || '',
           }));
         }
 
@@ -193,6 +229,149 @@ export default function Dashboard() {
 
   const handleDownloadInvoice = (donation: any) => {
     downloadReceipt(donation, { name: profile?.name, email: profile?.email });
+  };
+
+  const handleSaveProfile = async () => {
+    if (formState.phone) {
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phoneRegex.test(formState.phone)) {
+        alert('Please enter a valid 10-digit phone number.');
+        return;
+      }
+    }
+
+    if (formState.postalCode) {
+      const postalRegex = /^[a-zA-Z0-9]{5,10}$/;
+      if (!postalRegex.test(formState.postalCode)) {
+        alert('Please enter a valid postal code (5 to 10 alphanumeric characters).');
+        return;
+      }
+    }
+
+    if (formState.dob) {
+      const selectedDate = new Date(formState.dob);
+      const today = new Date();
+      if (isNaN(selectedDate.getTime())) {
+        alert('Please enter a valid date of birth.');
+        return;
+      }
+      if (selectedDate > today) {
+        alert('Date of birth cannot be in the future.');
+        return;
+      }
+    }
+
+    try {
+      const token = localStorage.getItem('pawnet_token');
+      if (!token) return;
+
+      const payload = {
+        ...formState,
+        phone: formState.phoneCountryCode + formState.phone
+      };
+
+      const res = await fetch('/api/auth/me', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('pawnet_user', JSON.stringify(data));
+        setProfile(data);
+        alert('Profile updated successfully!');
+      } else {
+        alert(data.message || 'Failed to update profile');
+      }
+    } catch (err: any) {
+      alert('Error updating profile: ' + err.message);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    if (profile) {
+      const parsePhone = (phoneStr: string | undefined) => {
+        if (!phoneStr) return { countryCode: '+91', number: '' };
+        const digitsOnly = phoneStr.replace(/\D/g, '');
+        if (digitsOnly.length > 10) {
+          const number = digitsOnly.slice(-10);
+          const prefixDigits = digitsOnly.slice(0, -10);
+          return { countryCode: `+${prefixDigits}`, number };
+        }
+        return { countryCode: '+91', number: digitsOnly };
+      };
+
+      const parsed = parsePhone(profile.phone);
+
+      setFormState({
+        firstName: profile.name.split(' ')[0] || '',
+        lastName: profile.name.split(' ').slice(1).join(' ') || '',
+        email: profile.email,
+        phoneCountryCode: parsed.countryCode,
+        phone: parsed.number,
+        gender: (profile as any).gender || 'Male',
+        address: (profile as any).address || '',
+        dob: (profile as any).dob || '',
+        location: profile.location?.city || '',
+        postalCode: (profile as any).postalCode || '',
+      });
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert('Please fill in all password fields.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      alert('New passwords do not match.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      alert('New password must be at least 6 characters.');
+      return;
+    }
+
+    setUpdatingPassword(true);
+    try {
+      const token = localStorage.getItem('pawnet_token');
+      if (!token) return;
+
+      const res = await fetch('/api/auth/me/password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        let errorMessage = text;
+        try {
+          const parsed = JSON.parse(text);
+          errorMessage = parsed.message || text;
+        } catch {}
+        alert('Failed to update password: ' + errorMessage);
+        return;
+      }
+
+      await res.json();
+      alert('Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      alert('Error updating password: ' + err.message);
+    } finally {
+      setUpdatingPassword(false);
+    }
   };
 
   const handleUpdateInquiryStatus = async (inquiryId: string, status: string) => {
@@ -656,19 +835,19 @@ export default function Dashboard() {
               <div className="space-y-6">
                 {/* Gender Toggle */}
                 <div className="flex items-center gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer" onClick={() => setFormState(s => ({...s, gender: 'Male'}))}>
                     <div className="relative flex items-center justify-center w-5 h-5 border rounded-full border-zinc-300 dark:border-zinc-600">
                       {formState.gender === 'Male' && <div className="w-2.5 h-2.5 bg-[#ED8A3E] rounded-full" />}
                       {formState.gender === 'Male' && <div className="absolute inset-0 border-2 border-[#ED8A3E] rounded-full pointer-events-none" />}
                     </div>
-                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300" onClick={() => setFormState(s => ({...s, gender: 'Male'}))}>Male</span>
+                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Male</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer" onClick={() => setFormState(s => ({...s, gender: 'Female'}))}>
                     <div className="relative flex items-center justify-center w-5 h-5 border rounded-full border-zinc-300 dark:border-zinc-600">
                       {formState.gender === 'Female' && <div className="w-2.5 h-2.5 bg-[#ED8A3E] rounded-full" />}
                       {formState.gender === 'Female' && <div className="absolute inset-0 border-2 border-[#ED8A3E] rounded-full pointer-events-none" />}
                     </div>
-                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300" onClick={() => setFormState(s => ({...s, gender: 'Female'}))}>Female</span>
+                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Female</span>
                   </label>
                 </div>
 
@@ -702,13 +881,45 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-500">Phone Number</label>
-                    <input type="text" value={formState.phone} onChange={e => setFormState(s => ({...s, phone: e.target.value}))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-none rounded-xl text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-[#ED8A3E]/50 outline-none" />
+                    <div className="flex gap-2">
+                      <div className="relative shrink-0 w-28">
+                        <select 
+                          value={formState.phoneCountryCode} 
+                          onChange={e => setFormState(s => ({...s, phoneCountryCode: e.target.value}))} 
+                          className="w-full px-3 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-none rounded-xl text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-[#ED8A3E]/50 outline-none appearance-none"
+                        >
+                          <option value="+91">+91 (IN)</option>
+                          <option value="+1">+1 (US)</option>
+                          <option value="+44">+44 (UK)</option>
+                          <option value="+61">+61 (AU)</option>
+                          <option value="+81">+81 (JP)</option>
+                          <option value="+49">+49 (DE)</option>
+                          <option value="+33">+33 (FR)</option>
+                          <option value="+971">+971 (AE)</option>
+                          <option value="+65">+65 (SG)</option>
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                      <input 
+                        type="text" 
+                        value={formState.phone} 
+                        maxLength={10}
+                        onChange={e => setFormState(s => ({...s, phone: e.target.value.replace(/\D/g, '')}))} 
+                        placeholder="Phone Number"
+                        className="flex-1 px-4 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-none rounded-xl text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-[#ED8A3E]/50 outline-none" 
+                      />
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-500">Date of Birth</label>
                     <div className="relative">
-                      <input type="text" value={formState.dob} onChange={e => setFormState(s => ({...s, dob: e.target.value}))} className="w-full pl-4 pr-10 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-none rounded-xl text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-[#ED8A3E]/50 outline-none" />
-                      <Calendar className="w-4 h-4 text-zinc-400 absolute right-4 top-1/2 -translate-y-1/2" />
+                      <input 
+                        type="date" 
+                        value={formState.dob ? formState.dob.substring(0, 10) : ''} 
+                        max={new Date().toISOString().split('T')[0]}
+                        onChange={e => setFormState(s => ({...s, dob: e.target.value}))} 
+                        className="w-full pl-4 pr-10 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-none rounded-xl text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-[#ED8A3E]/50 outline-none" 
+                      />
                     </div>
                   </div>
                 </div>
@@ -718,25 +929,45 @@ export default function Dashboard() {
                     <label className="text-xs font-semibold text-zinc-500">Location</label>
                     <div className="relative">
                       <select value={formState.location} onChange={e => setFormState(s => ({...s, location: e.target.value}))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-none rounded-xl text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-[#ED8A3E]/50 outline-none appearance-none">
-                        <option value="Atlanta, USA">Atlanta, USA</option>
-                        <option value="New York, USA">New York, USA</option>
-                        <option value="London, UK">London, UK</option>
+                        <option value="">Select Location</option>
                         <option value="Delhi, IN">Delhi, IN</option>
+                        <option value="Mumbai, IN">Mumbai, IN</option>
+                        <option value="Bangalore, IN">Bangalore, IN</option>
+                        <option value="Kolkata, IN">Kolkata, IN</option>
+                        <option value="Chennai, IN">Chennai, IN</option>
+                        <option value="New York, USA">New York, USA</option>
+                        <option value="San Francisco, USA">San Francisco, USA</option>
+                        <option value="Atlanta, USA">Atlanta, USA</option>
+                        <option value="London, UK">London, UK</option>
+                        <option value="Toronto, CA">Toronto, CA</option>
+                        <option value="Sydney, AU">Sydney, AU</option>
+                        <option value="Tokyo, JP">Tokyo, JP</option>
                       </select>
                       <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-500">Postal Code</label>
-                    <input type="text" value={formState.postalCode} onChange={e => setFormState(s => ({...s, postalCode: e.target.value}))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-none rounded-xl text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-[#ED8A3E]/50 outline-none" />
+                    <input 
+                      type="text" 
+                      value={formState.postalCode} 
+                      onChange={e => setFormState(s => ({...s, postalCode: e.target.value.replace(/[^a-zA-Z0-9]/g, '')}))} 
+                      className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-none rounded-xl text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-[#ED8A3E]/50 outline-none" 
+                    />
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-6 mt-2 border-t border-zinc-100 dark:border-zinc-800">
-                  <button className="px-6 py-2.5 rounded-xl border border-[#ED8A3E] text-[#ED8A3E] text-sm font-bold hover:bg-[#ED8A3E]/5 transition-colors">
+                  <button 
+                    onClick={handleDiscardChanges}
+                    className="px-6 py-2.5 rounded-xl border border-[#ED8A3E] text-[#ED8A3E] text-sm font-bold hover:bg-[#ED8A3E]/5 transition-colors"
+                  >
                     Discard Changes
                   </button>
-                  <button className="px-6 py-2.5 rounded-xl bg-[#ED8A3E] text-white text-sm font-bold hover:bg-[#D97706] transition-colors shadow-md shadow-[#ED8A3E]/20">
+                  <button 
+                    onClick={handleSaveProfile}
+                    className="px-6 py-2.5 rounded-xl bg-[#ED8A3E] text-white text-sm font-bold hover:bg-[#D97706] transition-colors shadow-md shadow-[#ED8A3E]/20"
+                  >
                     Save Changes
                   </button>
                 </div>
@@ -747,10 +978,54 @@ export default function Dashboard() {
           {userTab === 'security' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <h3 className="text-xl font-extrabold text-zinc-900 dark:text-zinc-50 mb-6">Login & Password</h3>
-              <div className="bg-zinc-50 dark:bg-zinc-950/50 rounded-2xl p-6 text-center text-zinc-500">
-                <Lock className="w-8 h-8 mx-auto mb-3 text-zinc-300" />
-                <p className="text-sm font-medium">Manage your security preferences here.</p>
-              </div>
+              
+              <form onSubmit={handleUpdatePassword} className="space-y-6 max-w-md">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-500">Current Password</label>
+                  <input 
+                    type="password" 
+                    value={currentPassword} 
+                    onChange={e => setCurrentPassword(e.target.value)} 
+                    placeholder="Enter current password"
+                    className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-none rounded-xl text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-[#ED8A3E]/50 outline-none" 
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-500">New Password</label>
+                  <input 
+                    type="password" 
+                    value={newPassword} 
+                    onChange={e => setNewPassword(e.target.value)} 
+                    placeholder="Enter new password (min. 6 characters)"
+                    className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-none rounded-xl text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-[#ED8A3E]/50 outline-none" 
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-500">Confirm New Password</label>
+                  <input 
+                    type="password" 
+                    value={confirmPassword} 
+                    onChange={e => setConfirmPassword(e.target.value)} 
+                    placeholder="Confirm new password"
+                    className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-none rounded-xl text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-[#ED8A3E]/50 outline-none" 
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <button 
+                    type="submit" 
+                    disabled={updatingPassword}
+                    className="px-6 py-2.5 rounded-xl bg-[#ED8A3E] text-white text-sm font-bold hover:bg-[#D97706] transition-colors shadow-md shadow-[#ED8A3E]/20 disabled:opacity-50"
+                  >
+                    {updatingPassword ? 'Updating...' : 'Update Password'}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           )}
 
@@ -808,7 +1083,7 @@ export default function Dashboard() {
                   <div className="text-center py-12 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800/30">
                     <p className="text-zinc-500 font-medium mb-4 text-sm">You haven't claimed any rescue missions yet.</p>
                     <button 
-                      onClick={() => navigate('/missions')}
+                      onClick={() => navigate('/?view=missions')}
                       className="px-6 py-2.5 bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-black rounded-xl transition-colors uppercase tracking-wider shadow-md"
                     >
                       Browse Available Missions

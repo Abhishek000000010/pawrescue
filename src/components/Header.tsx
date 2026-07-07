@@ -32,8 +32,30 @@ export default function Header({
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const navigate = useNavigate();
 
-  const userStr = localStorage.getItem('pawnet_user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  const [user, setUser] = useState<any>(() => {
+    const userStr = localStorage.getItem('pawnet_user');
+    return userStr ? JSON.parse(userStr) : null;
+  });
+
+  useEffect(() => {
+    const token = localStorage.getItem('pawnet_token');
+    if (token) {
+      fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error('Failed to fetch user');
+      })
+      .then(data => {
+        const currentUser = JSON.parse(localStorage.getItem('pawnet_user') || '{}');
+        const updated = { ...currentUser, ...data };
+        localStorage.setItem('pawnet_user', JSON.stringify(updated));
+        setUser(updated);
+      })
+      .catch(err => console.error('Error syncing profile in header:', err));
+    }
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
