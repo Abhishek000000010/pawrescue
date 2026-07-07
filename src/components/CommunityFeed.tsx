@@ -130,6 +130,43 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
   const [userPoints, setUserPoints] = useState(450);
   const [userMissions, setUserMissions] = useState(8);
 
+  // Logged-in user profile — read instantly from localStorage (same data as login/header), then refresh from API
+  const [currentUser, setCurrentUser] = useState<{ name: string; avatar: string; role: string } | null>(() => {
+    try {
+      const stored = localStorage.getItem('pawnet_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return {
+          name: u.name || u.firstName || 'Guardian',
+          avatar: u.avatar || '',
+          role: u.role || 'user'
+        };
+      }
+    } catch (_) {}
+    return null;
+  });
+
+  useEffect(() => {
+    const token = localStorage.getItem('pawnet_token');
+    if (!token) return;
+    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          setCurrentUser({
+            name: data.name || data.firstName || 'Guardian',
+            avatar: data.avatar || '',
+            role: data.role || 'user'
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const userDisplayName = currentUser?.name || 'Guardian';
+  const DEFAULT_AVATAR = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.name || 'User')}&background=FF5A5F&color=fff&size=150`;
+  const userAvatar = currentUser?.avatar || DEFAULT_AVATAR;
+
   // Registering colony modal simulation
   const [showRegisterColony, setShowRegisterColony] = useState(false);
   const [colonyName, setColonyName] = useState('');
@@ -496,8 +533,8 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
               <div className="relative inline-block mb-4 mt-4">
                 <div className="h-20 w-20 rounded-full overflow-hidden border-4 border-white dark:border-zinc-900 shadow-md mx-auto relative z-10">
                   <img 
-                    src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150" 
-                    alt="Alex Rivera" 
+                    src={userAvatar}
+                    alt={userDisplayName}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -507,7 +544,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
               </div>
               
               <h2 className="font-heading text-lg font-extrabold text-brand-dark dark:text-brand-light leading-snug">
-                Alex Rivera
+                {userDisplayName}
               </h2>
               <span className="inline-block text-[9px] text-brand-primary bg-brand-primary/10 dark:text-amber-400 dark:bg-amber-400/10 font-black tracking-widest px-2.5 py-0.5 rounded-full mt-1 uppercase">
                 LEVEL 4 GUARDIAN
@@ -648,8 +685,8 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
                 <div className="flex items-start gap-4">
                   <div className="h-11 w-11 rounded-full overflow-hidden border-2 border-brand-primary/20 shrink-0 shadow-inner bg-zinc-100">
                     <img 
-                      src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150" 
-                      alt="Alex Rivera" 
+                      src={userAvatar}
+                      alt={userDisplayName}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -1004,8 +1041,8 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
                       <div className="flex items-center gap-3 relative pt-1">
                         <div className="h-8 w-8 rounded-full overflow-hidden border border-brand-primary/15 bg-brand-cream shrink-0">
                           <img 
-                            src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150" 
-                            alt="Alex Rivera" 
+                            src={userAvatar}
+                            alt={userDisplayName}
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -1251,7 +1288,7 @@ export default function CommunityFeed({ posts: propPosts, setPosts: propSetPosts
                   { rank: 1, name: 'John M.', xp: '2,840 XP', streak: '24d', badges: ['🥇 First Responder', '🍼 Foster'], avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150', self: false },
                   { rank: 2, name: 'Anna K.', xp: '2,110 XP', streak: '18d', badges: ['📍 Pro Spotter'], avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150', self: false },
                   { rank: 3, name: 'Priya S.', xp: '1,950 XP', streak: '12d', badges: ['🥗 Feeder Elite'], avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=150', self: false },
-                  { rank: 4, name: 'Alex Rivera (You)', xp: `${userPoints} XP`, streak: '8d', badges: ['🥇 First Responder', '🍼 Foster'], avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150', self: true },
+                  { rank: 4, name: `${userDisplayName} (You)`, xp: `${userPoints} XP`, streak: '8d', badges: ['🥇 First Responder', '🍼 Foster'], avatar: userAvatar, self: true },
                   { rank: 5, name: 'Marcus L.', xp: '410 XP', streak: '3d', badges: ['🥗 Feeder'], avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=150', self: false }
                 ].map((guardian) => (
                   <div
