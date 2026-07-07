@@ -232,13 +232,7 @@ export default function Dashboard() {
   };
 
   const handleSaveProfile = async () => {
-    if (formState.phone) {
-      const phoneRegex = /^[0-9]{10}$/;
-      if (!phoneRegex.test(formState.phone)) {
-        alert('Please enter a valid 10-digit phone number.');
-        return;
-      }
-    }
+
 
     if (formState.postalCode) {
       const postalRegex = /^[a-zA-Z0-9]{5,10}$/;
@@ -267,7 +261,7 @@ export default function Dashboard() {
 
       const payload = {
         ...formState,
-        phone: formState.phoneCountryCode + formState.phone
+        phone: formState.phoneCountryCode + formState.phone.replace(/\D/g, '')
       };
 
       const res = await fetch('/api/auth/me', {

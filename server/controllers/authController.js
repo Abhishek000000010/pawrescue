@@ -309,8 +309,8 @@ export const updateUserProfile = async (req, res) => {
     const { firstName, lastName, gender, address, phone, dob, location, postalCode } = req.body;
 
     if (phone) {
-      const phoneRegex = /^[0-9]{10}$/;
-      if (!phoneRegex.test(phone)) {
+      const digitsOnly = phone.replace(/\D/g, '');
+      if (digitsOnly.length < 10) {
         return res.status(400).json({ message: 'Please enter a valid 10-digit phone number.' });
       }
     }
