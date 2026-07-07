@@ -25,7 +25,10 @@ export default defineConfig(() => {
         '/overpass': {
           target: 'https://overpass-api.de/api',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/overpass/, '')
+          rewrite: (path) => path.replace(/^\/overpass/, ''),
+          headers: {
+            'User-Agent': 'PawRescueApp/1.0 (contact@example.com)'
+          }
         },
       },
     },

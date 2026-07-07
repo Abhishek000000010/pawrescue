@@ -6,6 +6,7 @@ import {
   getMapPins,
   updateCatStatus,
   analyzeImage,
+  getNearbyPlaces,
 } from '../controllers/catController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import upload from '../middleware/upload.js';
@@ -15,6 +16,7 @@ const router = express.Router();
 // Public routes
 router.get('/', getCats);
 router.get('/map/pins', getMapPins);
+router.get('/map/places', getNearbyPlaces);
 router.get('/:id', getCatById);
 
 // Protected routes (require auth)

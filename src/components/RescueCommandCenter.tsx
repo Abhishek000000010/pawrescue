@@ -25,7 +25,7 @@ interface RescueMarker {
   reportedBy: string;
   reportedTime: string;
   aiAnalysis: string[];
-  filterCategory: 'emergency' | 'injured' | 'pregnant' | 'kittens' | 'sick' | 'foster' | 'adoption' | 'vet' | 'shelter';
+  filterCategory: 'emergency' | 'injured' | 'pregnant' | 'kittens' | 'sick' | 'foster' | 'adoption' | 'vet' | 'shelter' | 'cat_shop';
 }
 
 interface TimelineEvent {
@@ -54,106 +54,23 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c; // distance in km
 }
 
-// Dynamic generator of highly localized and realistic rescue, vet, and foster data
-const generateNearbyData = (centerLat: number, centerLng: number): RescueMarker[] => {
-  const baseVets = [
-    { name: 'Apex 24/7 Animal Hospital', rating: 4.8, status: 'Trauma Emergency Open' },
-    { name: 'Happy Paws Cat Clinic', rating: 4.5, status: 'Surgical discounts active' },
-    { name: 'Dr. Roy Veterinary Clinic', rating: 4.9, status: 'Advanced feline diagnostic care' }
-  ];
-  // Fosters are NOT faked here — they come only from real opted-in Guardians
-  // via fetchNearbyFosters(). Keeping this empty avoids fictional foster pins.
-  const baseFosters: { name: string; rating: number; status: string }[] = [];
-  const baseCats = [
-    { name: 'Oliver', type: 'Emergency' as const, status: 'Front leg injured. Shivering and hiding.', priority: 'High' as const, image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=600', reportedBy: 'Anjali Sharma', filterCategory: 'injured' as const },
-    { name: 'Mochi', type: 'Rescue Needed' as const, status: 'Heavily pregnant, nesting in dry garage.', priority: 'Critical' as const, image: 'https://images.unsplash.com/photo-1574158622643-69d34d72650a?auto=format&fit=crop&q=80&w=600', reportedBy: 'Karan Malhotra', filterCategory: 'pregnant' as const }
-  ];
-  const offsets = [
-    { dLat: 0.0031, dLng: -0.0042 }, { dLat: -0.0038, dLng: 0.0051 }, { dLat: 0.0062, dLng: 0.0019 }, { dLat: -0.0022, dLng: -0.0061 }
-  ];
-  let offsetIdx = 0;
-  const result: RescueMarker[] = [];
-  
-  baseVets.forEach((v, i) => {
-    const off = offsets[offsetIdx++ % offsets.length];
-    result.push({
-      id: `vet-fb-${i}`, type: 'Vet', name: v.name, status: `${v.status} • ${v.rating} ★`, distance: `${calculateDistance(centerLat, centerLng, centerLat + off.dLat, centerLng + off.dLng).toFixed(2)} km`,
-      priority: 'Medium', lat: centerLat + off.dLat, lng: centerLng + off.dLng, image: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=600', reportedBy: 'System Registry', reportedTime: 'Always open', aiAnalysis: ['Premium discount active', `Rating: ${v.rating}/5`], filterCategory: 'vet'
-    });
-  });
-  baseFosters.forEach((f, i) => {
-    const off = offsets[offsetIdx++ % offsets.length];
-    result.push({
-      id: `shelter-fb-${i}`, type: 'Shelter', name: f.name, status: `${f.status} • ${f.rating} ★`, distance: `${calculateDistance(centerLat, centerLng, centerLat + off.dLat, centerLng + off.dLng).toFixed(2)} km`,
-      priority: 'Low', lat: centerLat + off.dLat, lng: centerLng + off.dLng, image: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?auto=format&fit=crop&q=80&w=600', reportedBy: 'Sanctuary Staff', reportedTime: '24 hours active', aiAnalysis: ['Full heating and insulation', `Rating: ${f.rating}/5`], filterCategory: 'shelter'
-    });
-  });
-  baseCats.forEach((c, i) => {
-    const off = offsets[offsetIdx++ % offsets.length];
-    result.push({
-      id: `cat-fb-${i}`, type: c.type, name: c.name, status: c.status, distance: `${calculateDistance(centerLat, centerLat + off.dLat, centerLng, centerLng + off.dLng).toFixed(2)} km`,
-      priority: c.priority, lat: centerLat + off.dLat, lng: centerLng + off.dLng, image: c.image, reportedBy: c.reportedBy, reportedTime: 'Today, 10:15 AM', aiAnalysis: ['Stressed posture detected', 'Coordinate rescue transport instantly'], filterCategory: c.filterCategory
-    });
-  });
-  return result;
+// Dynamic generator disabled to display only real-time shops and markers
+const generateNearbyData = (centerLat: number, centerLng: number, neighborhood = 'Local'): RescueMarker[] => {
+  return [];
 };
 
-// Function to fetch REAL vets and shelters using OpenStreetMap's Overpass API
+// Function to fetch REAL vets, shelters, and pet shops using the backend places proxy
 const fetchRealVetsAndShelters = async (centerLat: number, centerLng: number): Promise<RescueMarker[]> => {
-  const radius = 15000; // 15km radius to ensure coverage in suburbs
-  const query = `
-    [out:json][timeout:15];
-    (
-      node["amenity"="veterinary"](around:${radius},${centerLat},${centerLng});
-      node["amenity"="animal_shelter"](around:${radius},${centerLat},${centerLng});
-    );
-    out body;
-  `;
-  
   try {
-    // Using Vercel rewrite proxy to bypass CORS
-    const res = await fetch(`/overpass/interpreter?data=${encodeURIComponent(query)}`);
-    
-    if (!res.ok) return [];
-    const data = await res.json();
-    
-    const result: RescueMarker[] = [];
-    
-    data.elements.forEach((el: any, i: number) => {
-      if (!el.lat || !el.lon) return;
-      
-      const isVet = el.tags?.amenity === 'veterinary';
-      const name = el.tags?.name || (isVet ? 'Local Vet Clinic' : 'Local Animal Shelter');
-      const dist = calculateDistance(centerLat, centerLng, el.lat, el.lon);
-      const fakeRating = (4.0 + Math.random() * 0.9).toFixed(1); 
-      const isOpen = el.tags?.opening_hours ? (el.tags.opening_hours.includes('24/7') ? '24/7 Emergency Open' : 'Check Hours') : (isVet ? 'Emergency Open' : 'Intake Open');
-      
-      result.push({
-        id: `osm-${el.id || i}-${Date.now()}`,
-        type: isVet ? 'Vet' : 'Shelter',
-        name: name,
-        status: `${isOpen} • ${fakeRating} ★`,
-        distance: `${dist.toFixed(2)} km`,
-        priority: isVet ? 'Medium' : 'Low',
-        lat: el.lat,
-        lng: el.lon,
-        image: isVet ? 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=600' : 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?auto=format&fit=crop&q=80&w=600',
-        reportedBy: 'Verified Registry',
-        reportedTime: 'Live API',
-        aiAnalysis: [
-          el.tags?.phone ? `Phone: ${el.tags.phone}` : 'Contact details unavailable',
-          el.tags?.website ? `Website: ${el.tags.website}` : 'Verified via OpenStreetMap',
-          isVet ? 'Provides medical care' : 'Provides safe housing'
-        ],
-        filterCategory: isVet ? 'vet' : 'shelter'
-      });
-    });
-    
-    return result;
+    const res = await fetch(`/api/cats/map/places?lat=${centerLat}&lng=${centerLng}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.places || [];
+    }
   } catch (err) {
-    console.error('Overpass API error:', err);
-    return [];
+    console.error("Failed to fetch nearby places from backend proxy:", err);
   }
+  return [];
 };
 
 // Fetch REAL, opted-in foster homes registered by our own Guardians.
@@ -184,7 +101,7 @@ const fetchNearbyFosters = async (centerLat: number, centerLng: number): Promise
           'Approximate area shown for privacy',
           'Contact coordinated through PawNet',
         ],
-        filterCategory: 'foster' as const,
+        filterCategory: 'shelter' as const,
       }));
   } catch (err) {
     console.error('Foster fetch error:', err);
@@ -217,7 +134,8 @@ const getPinIconHtml = (type: string, isSelected: boolean) => {
     'Vet': `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>`,
     'Feeding Station': `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
     'Water Station': `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0a2 2 0 01-2 2H6a2 2 0 01-2-2m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-1.5m-11.5 0H3m13-4h.01M17 11h.01M17 13h.01"/></svg>`,
-    'Volunteer': `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`
+    'Volunteer': `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`,
+    'Colony': `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`
   };
 
   const bgClass = colors[type] || 'bg-zinc-500 text-zinc-800 dark:text-white';
@@ -240,6 +158,7 @@ export default function RescueCommandCenter() {
   const [isHeatmap, setIsHeatmap] = useState(false);
   const [isVolunteerMode, setIsVolunteerMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [locationSearch, setLocationSearch] = useState('');
 
   // Dropdowns for sidebar
   const [collapseFilters, setCollapseFilters] = useState(false);
@@ -432,8 +351,6 @@ export default function RescueCommandCenter() {
   useEffect(() => {
     let isActive = true;
     const fetchCatsAndGenerateMarkers = async () => {
-      let combinedMarkers: RescueMarker[] = [];
-
       let realCatMarkers: RescueMarker[] = [];
       try {
         const response = await fetch('/api/cats');
@@ -446,13 +363,14 @@ export default function RescueCommandCenter() {
             const jitterLng = (Math.random() - 0.5) * 0.0004;
             const baseLat = cat.location?.coordinates?.lat || centerCoords[0];
             const baseLng = cat.location?.coordinates?.lng || centerCoords[1];
+            const catDist = calculateDistance(centerCoords[0], centerCoords[1], baseLat, baseLng);
 
             return {
               id: cat._id,
               type: cat.severity === 'critical' ? 'Emergency' : 'Rescue Needed',
               name: cat.name || 'Unknown Cat',
               status: `Reported: ${cat.condition || cat.severity}`,
-              distance: '0.00 km',
+              distance: `${catDist.toFixed(2)} km`,
               priority: cat.severity === 'critical' ? 'Critical' : cat.severity === 'moderate' ? 'High' : 'Medium',
               lat: baseLat + jitterLat,
               lng: baseLng + jitterLng,
@@ -468,31 +386,65 @@ export default function RescueCommandCenter() {
         console.error('Failed to fetch real cats for map', err);
       }
 
+      // Geocode center coordinates to get localized name for mock fallback markers
+      let localizedName = 'Local';
       try {
-        // Fetch REAL vets/shelters (OpenStreetMap) and REAL opted-in fosters (our DB)
-        const [realVets, realFosters] = await Promise.all([
-          fetchRealVetsAndShelters(centerCoords[0], centerCoords[1]),
-          fetchNearbyFosters(centerCoords[0], centerCoords[1]),
-        ]);
-
-        // Only combine if we actually get data, else use fallback
-        if (realVets.length > 0) {
-           combinedMarkers = [...realCatMarkers, ...realVets, ...realFosters];
-        } else {
-           const fallbackData = generateNearbyData(centerCoords[0], centerCoords[1]);
-           combinedMarkers = [...realCatMarkers, ...fallbackData, ...realFosters];
+        const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${centerCoords[0]}&lon=${centerCoords[1]}`);
+        const geoData = await geoRes.json();
+        if (geoData && geoData.address) {
+          const addr = geoData.address;
+          localizedName = addr.suburb || addr.neighbourhood || addr.city_district || addr.residential || addr.road || addr.city || addr.town || 'Local';
         }
-      } catch (err) {
-        console.error('Failed to fetch real vets/fosters for map', err);
-        const fallbackData = generateNearbyData(centerCoords[0], centerCoords[1]);
-        combinedMarkers = [...realCatMarkers, ...fallbackData];
+      } catch (e) {
+        console.warn('Fallback geocode failed:', e);
       }
 
+      // Initialize map immediately with reported cats and locally generated fallbacks
+      const fallbackData = generateNearbyData(centerCoords[0], centerCoords[1], localizedName);
+      const initialMarkers = [...realCatMarkers, ...fallbackData];
+
       if (isActive) {
-        setMarkers(combinedMarkers);
-        if (combinedMarkers.length > 0) {
-          setSelectedMarker(combinedMarkers[0]); // Select first element as default
+        setMarkers(initialMarkers);
+        if (initialMarkers.length > 0) {
+          setSelectedMarker(initialMarkers[0]); // Select first element as default
         }
+      }
+
+      // Fetch fosters asynchronously from DB next
+      try {
+        const realFosters = await fetchNearbyFosters(centerCoords[0], centerCoords[1]);
+        if (realFosters.length > 0 && isActive) {
+          setMarkers(prev => {
+            const filtered = prev.filter(m => !m.id.startsWith('foster-'));
+            return [...filtered, ...realFosters];
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch fosters', err);
+      }
+
+      // Fetch real OSM resources asynchronously in the background with a 10-second timeout
+      try {
+        const timeoutPromise = new Promise<RescueMarker[]>((_, reject) =>
+          setTimeout(() => reject(new Error('OSM request timeout')), 10000)
+        );
+        const osmPromise = fetchRealVetsAndShelters(centerCoords[0], centerCoords[1]);
+        const realVets = await Promise.race([osmPromise, timeoutPromise]);
+
+        if (realVets.length > 0 && isActive) {
+          setMarkers(prev => {
+            const filtered = prev.filter(
+              m => !m.id.startsWith('vet-fb-') && 
+                   !m.id.startsWith('shop-fb-') && 
+                   !m.id.startsWith('colony-fb-') && 
+                   !m.id.startsWith('osm-') &&
+                   !m.id.startsWith('nominatim-')
+            );
+            return [...filtered, ...realVets];
+          });
+        }
+      } catch (err) {
+        console.warn('OSM load failed or timed out. Keeping fallback map data:', err);
       }
     };
 
@@ -596,10 +548,12 @@ export default function RescueCommandCenter() {
       tileLayerRef.current.remove();
     }
 
-    const tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+    const tileUrl = isDarkTheme
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 
     const newTiles = L.tileLayer(tileUrl, {
-      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 19
     }).addTo(mapRef.current);
 
@@ -787,6 +741,36 @@ export default function RescueCommandCenter() {
     }
   };
 
+  const handleLocationSearch = async () => {
+    if (!locationSearch.trim()) return;
+    setIsLocating(true);
+    setLocationName('Searching...');
+
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationSearch)}&limit=1`);
+      if (!res.ok) throw new Error('Search failed');
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const { lat, lon, display_name } = data[0];
+        const newLat = parseFloat(lat);
+        const newLng = parseFloat(lon);
+        setUserCoords([newLat, newLng]);
+        setCenterCoords([newLat, newLng]);
+        if (mapRef.current) {
+          mapRef.current.flyTo([newLat, newLng], 14);
+        }
+        setLocationName(display_name);
+      } else {
+        setLocationName('Location not found');
+      }
+    } catch (err) {
+      console.error('Geocoding error:', err);
+      setLocationName('Search failed');
+    } finally {
+      setIsLocating(false);
+    }
+  };
+
   const handleClaimMission = () => {
     if (!selectedMarker) return;
     setVolunteerAccepted(true);
@@ -895,26 +879,48 @@ export default function RescueCommandCenter() {
           </div>
         </div>
 
-        {/* Floating Search Input with Near me button */}
-        <div className="w-full md:max-w-xl bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/65 dark:border-zinc-800/60 p-1 flex items-center gap-2 shadow-sm">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+        {/* Floating Search Inputs: Geocoded Location & Marker Filter */}
+        <div className="w-full md:max-w-xl bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/65 dark:border-zinc-800/60 p-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shadow-sm">
+          <div className="flex-1 relative border-b sm:border-b-0 sm:border-r border-zinc-200 dark:border-zinc-800">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
             <input
               type="text"
-              placeholder="Search local clinics, fosters, feed stations, active rescue cats..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border-0 bg-transparent pl-11 pr-4 py-2 text-xs text-zinc-800 dark:text-zinc-100 focus:ring-0 focus:outline-none font-semibold"
+              placeholder="Search location..."
+              value={locationSearch}
+              onChange={(e) => setLocationSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleLocationSearch();
+              }}
+              className="w-full rounded-xl border-0 bg-transparent pl-9 pr-2 py-2 text-xs text-zinc-800 dark:text-zinc-100 focus:ring-0 focus:outline-none font-semibold"
             />
           </div>
-          <button
-            onClick={handleLocateMe}
-            disabled={isLocating}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-primary/10 border border-brand-primary/20 text-[10px] font-bold text-brand-primary hover:bg-brand-primary/20 transition-all shrink-0 cursor-pointer disabled:opacity-50"
-          >
-            <Compass className={`h-3.5 w-3.5 ${isLocating ? 'animate-spin' : ''}`} /> 
-            {isLocating ? 'Locating...' : 'Near Me'}
-          </button>
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Filter markers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-xl border-0 bg-transparent pl-9 pr-2 py-2 text-xs text-zinc-800 dark:text-zinc-100 focus:ring-0 focus:outline-none font-semibold"
+            />
+          </div>
+          <div className="flex items-center gap-1.5 pl-2 pr-1 pb-1 sm:pb-0 shrink-0">
+            <button
+              onClick={handleLocationSearch}
+              disabled={isLocating}
+              className="px-3 py-1.5 rounded-xl bg-brand-primary text-zinc-950 hover:bg-brand-primary/95 transition-all cursor-pointer text-[10px] font-bold disabled:opacity-50"
+            >
+              Go
+            </button>
+            <button
+              onClick={handleLocateMe}
+              disabled={isLocating}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-primary/10 border border-brand-primary/20 text-[10px] font-bold text-brand-primary hover:bg-brand-primary/20 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Compass className={`h-3.5 w-3.5 ${isLocating ? 'animate-spin' : ''}`} /> 
+              {isLocating ? 'Locating...' : 'Near Me'}
+            </button>
+          </div>
         </div>
 
         {/* Right Action Icons & Toggles */}
@@ -944,16 +950,6 @@ export default function RescueCommandCenter() {
             </button>
           </div>
 
-          {/* Alarm Bell notification */}
-          <button className="relative p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/55 dark:border-zinc-800/40 hover:bg-zinc-50 text-zinc-600 dark:text-zinc-300 transition-all cursor-pointer">
-            <Bell className="h-4 w-4" />
-            <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-[#FF5A5F] text-[9px] font-extrabold text-zinc-800 dark:text-white flex items-center justify-center shadow-sm">3</span>
-          </button>
-
-          {/* User Profile avatar */}
-          <div className="h-9 w-9 rounded-full overflow-hidden border-2 border-brand-primary/45 shadow-sm">
-            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150" alt="Profile" referrerPolicy="no-referrer" />
-          </div>
 
         </div>
       </div>
@@ -983,12 +979,12 @@ export default function RescueCommandCenter() {
                   className="px-5 pb-5 pt-1 space-y-1.5 border-t border-zinc-100/50 dark:border-zinc-800/20"
                 >
                   {[
-                    { key: 'emergency', label: 'Emergency Sighting', icon: '🚨', count: 4, bg: 'bg-red-500/10 text-red-500 border-red-500/20' },
+                    { key: 'emergency', label: 'Emergency Sightings', icon: '🚨', count: 4, bg: 'bg-red-500/10 text-red-500 border-red-500/20' },
                     { key: 'injured', label: 'Injured Felines', icon: '🤕', count: 3, bg: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
                     { key: 'pregnant', label: 'Pregnant Nesting', icon: '🤰', count: 2, bg: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20' },
-                    { key: 'vet', label: '24/7 Vets Near Me', icon: '🩺', count: 4, bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
-                    { key: 'shelter', label: 'Shelters & NGOs', icon: '🏡', count: 3, bg: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
-                    { key: 'foster', label: 'Needs Foster Care', icon: '🏠', count: 5, bg: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20' },
+                    { key: 'vet', label: 'Vet Clinics & Shops', icon: '🩺', count: 4, bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
+                    { key: 'shelter', label: 'Cat Communities & Shelters', icon: '🏡', count: 3, bg: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
+                    { key: 'cat_shop', label: 'Cat Shops & Supplies', icon: '🛒', count: 5, bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
                   ].map((filter) => {
                     const isSelected = activeFilters.includes(filter.key);
                     return (
@@ -1342,11 +1338,11 @@ export default function RescueCommandCenter() {
                     <button 
                       onClick={() => {
                         playBeep(1000);
-                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${selectedMarker.lat},${selectedMarker.lng}`, '_blank');
+                        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMarker.name)}+${selectedMarker.lat},${selectedMarker.lng}`, '_blank');
                       }}
                       className="py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-brand-primary font-black uppercase tracking-wider text-[9px] hover:bg-brand-primary/10 flex items-center justify-center gap-1 transition-all cursor-pointer"
                     >
-                      <Navigation className="h-3.5 w-3.5" /> Navigate Here
+                      <Navigation className="h-3.5 w-3.5" /> View on Google Maps
                     </button>
                     <button 
                       onClick={() => playBeep(1050)}
